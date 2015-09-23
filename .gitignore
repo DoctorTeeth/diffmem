@@ -1,0 +1,6 @@
+*.pyc
+*.swp
+out*
+log
+*.pkl
+!best_15.pkl
