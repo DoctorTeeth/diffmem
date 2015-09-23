@@ -28,13 +28,11 @@ class NTM(object):
     self.Wobeta_r = rando(1,hidden_size)
     self.Wobeta_w = rando(1,hidden_size)
 
-    # the interpolation gate is a scalar, but it doesn't have to be
-    # TODO: try having a per_spot interpolation gate
+    # the interpolation gate is a scalar
     self.Wog_r = rando(1,hidden_size)
     self.Wog_w = rando(1,hidden_size)
 
     shift_width = min(3,self.N)
-    #shift_width = self.N
     self.Wos_r = rando(shift_width,hidden_size)
     self.Wos_w = rando(shift_width,hidden_size)
 
@@ -68,7 +66,7 @@ class NTM(object):
     self.berases = rando(self.M,1)
 
     # initialize some recurrent things to bias values
-    self.rsInit = np.random.uniform(-1,1,(self.M,1)) # we want this to be 8 by 1
+    self.rsInit = np.random.uniform(-1,1,(self.M,1))
     self.memsInit = np.random.randn(self.N,self.M)*0.01
     self.w_ws_initInit = np.random.randn(self.N,1)*0.01
     self.w_rs_initInit = np.random.randn(self.N,1)*0.01
@@ -147,9 +145,6 @@ class NTM(object):
     n is the counter we're on, just for debugging
     """
 
-    # could have fprop not do anything about the ps
-    # having to get the ps out is messing us up
-
     def fprop(params):
 
       [Wxh, Wrh, Who, Woy, Wok_r, Wok_w, Wobeta_r, Wobeta_w
@@ -178,9 +173,6 @@ class NTM(object):
 
         hs[t] = np.tanh(np.dot(Wxh, xs[t]) + np.dot(Wrh, np.reshape(rs[t-1],(self.M,1))) + bh)
 
-        # o is analogous to o' in the LTT paper
-        # TODO: in CGT, he doesn't activate what is his equivalent of the o layer
-        # but I only have one in mine
         os[t] = np.tanh(np.dot(Who, hs[t]) + bo)
 
         # parameters to the read head
