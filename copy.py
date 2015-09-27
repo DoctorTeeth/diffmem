@@ -18,7 +18,6 @@ np.random.seed(0)
 GRAD_CHECK = False
 TEST_MODE  = True
 
-#inFile  = 'serializations/params_n-50000_2015-09-22-Sep-09-1442937856.pkl' 
 inFile  = 'best_15.pkl' 
 #inFile = None
 vec_size = 3

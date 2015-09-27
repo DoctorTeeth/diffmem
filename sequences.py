@@ -3,6 +3,7 @@ Generate random instances of various artificial tasks.
 Right now, only a bit-vector copy task is implemented.
 """
 import autograd.numpy as np
+import pdb
 
 def copy_sequence(seq_length, vec_size):
   """
@@ -20,11 +21,11 @@ def copy_sequence(seq_length, vec_size):
 
   in_sequence = np.random.randint(2, size=(seq_length, input_size))
   in_sequence[:,-2:] = 0
-  out_sequence = in_sequence[:,:-2]
+  out_sequence = in_sequence[:,:-1]
 
   # set start bit in inputs
   start_vec = np.zeros(input_size)
-  start_vec[-2] = 1 
+  start_vec[-2] = 1
   inputs[0] = start_vec
 
   # set the pattern bits in inputs
@@ -32,7 +33,7 @@ def copy_sequence(seq_length, vec_size):
 
   # set stop bit in inputs
   stop_vec = np.zeros(input_size)
-  stop_vec[-1] = 1 
+  stop_vec[-1] = 1
   inputs[seq_length+1] = stop_vec
 
   # set all the bits in outputs
@@ -53,3 +54,72 @@ def easy_copy(seq_length, vec_size):
   inputs[1:seq_length,-2] = 1
   inputs[seq_length+2:-1,-1] = 1
   return inputs, outputs
+
+def repeat_copy(seq_length, vec_size, repeats):
+  """
+  Returns inputs, outputs
+
+  Inputs consists of a sequence of length seq-length,
+  followed by a scalar repeat count in another channel.
+
+  After the input sequence, we get a scalar on the scalar channel,
+  and we need to copy the sequence that number of times and emit the end marker.
+
+  We want the input to always be the same length.
+
+  If we will train on sequences of length 5 repeated up to 5 times
+  and test on sequences of length 10 repeated up to 10 times, then
+  every input should be the length it would be if we had a sequence of
+  length 10 repeated 10 times.
+
+  The repeat task has vec_size, plus the start channel, plus the scalar channel.
+  So it's input_size = vec_size + 2
+  output has vec_size, plus the stop channel, so output
+  For the sequence, we see a start, then seq_length, then scalar
+  then 10*seq_length, then the stop bit
+  so this is 3 + (10+1)*seq_length
+  """
+  max_repeats = 5
+  r = min(max_repeats, repeats)
+  input_size  = vec_size + 2
+  output_size = vec_size + 1
+  length  = seq_length * (max_repeats+1) + 3
+  inputs  = np.zeros((length,input_size),dtype=np.float32)
+  outputs = np.zeros((length,output_size),dtype=np.float32)
+
+  in_sequence = np.random.randint(2, size=(seq_length, input_size))
+  in_sequence[:,-2:] = 0
+
+  out_sequence = in_sequence[:,:-2]
+
+  # set start bit in inputs
+  start_vec = np.zeros(input_size)
+  start_vec[-2] = 1
+  inputs[0] = start_vec
+
+  # set the pattern bits in inputs
+  inputs[1:seq_length+1] = in_sequence
+
+  # set repeat value
+  stop_vec = np.zeros(input_size)
+  stop_vec[-1] = r
+  inputs[seq_length+1] = stop_vec
+
+  # set all the bits in outputs
+  # pdb.set_trace()
+  for i in range(0,r):
+    a = (i+1)*seq_length + 2
+    b = a + seq_length
+    outputs[a:b,0:vec_size] = out_sequence
+
+  # set the finished bit in the target section
+  finish_vec = np.zeros(output_size)
+  finish_vec[-1] = 1
+  outputs[-1] = finish_vec
+  return inputs, outputs
+
+i,o = repeat_copy(2,3,5)
+print i
+print o
+print i.shape
+print o.shape
