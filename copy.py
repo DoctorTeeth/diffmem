@@ -77,7 +77,9 @@ while True:
   if verbose or TEST_MODE:
     #TODO: this is where we will stick the better visualization
     print 'iter %d' % (n)
-    visualize(inputs, outputs, r, w, a, e)
+    hi = inputs.shape[1] - 2
+    wi = inputs.shape[0] 
+    visualize(inputs, outputs, r, w, a, e, hi, wi)
 
     # check on the fancy quotients
     print "max_length: ", max_length

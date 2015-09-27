@@ -79,7 +79,8 @@ def repeat_copy(seq_length, vec_size, repeats):
   then 10*seq_length, then the stop bit
   so this is 3 + (10+1)*seq_length
   """
-  max_repeats = 5
+  # TODO: max repeats should be an arg
+  max_repeats = 10
   r = min(max_repeats, repeats)
   input_size  = vec_size + 2
   output_size = vec_size + 1
@@ -114,11 +115,9 @@ def repeat_copy(seq_length, vec_size, repeats):
   # set the finished bit in the target section
   finish_vec = np.zeros(output_size)
   finish_vec[-1] = 1
-  outputs[-1] = finish_vec
+  outputs[b] = finish_vec
   return inputs, outputs
 
-i,o = repeat_copy(2,3,5)
-print i
-print o
-print i.shape
-print o.shape
+# i, t = repeat_copy(1,3,2)
+# print i
+# print t
