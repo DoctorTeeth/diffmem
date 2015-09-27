@@ -106,7 +106,6 @@ def repeat_copy(seq_length, vec_size, repeats):
   inputs[seq_length+1] = stop_vec
 
   # set all the bits in outputs
-  # pdb.set_trace()
   for i in range(0,r):
     a = (i+1)*seq_length + 2
     b = a + seq_length
