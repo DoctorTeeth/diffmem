@@ -55,7 +55,7 @@ def easy_copy(seq_length, vec_size):
   inputs[seq_length+2:-1,-1] = 1
   return inputs, outputs
 
-def repeat_copy(seq_length, vec_size, repeats):
+def repeat_copy(seq_length, vec_size, repeats, max_repeats):
   """
   Returns inputs, outputs
 
@@ -79,8 +79,6 @@ def repeat_copy(seq_length, vec_size, repeats):
   then 10*seq_length, then the stop bit
   so this is 3 + (10+1)*seq_length
   """
-  # TODO: max repeats should be an arg
-  max_repeats = 10
   r = min(max_repeats, repeats)
   input_size  = vec_size + 2
   output_size = vec_size + 1
