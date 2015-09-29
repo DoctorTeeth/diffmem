@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 import autograd.numpy as np
-import sequences 
-from ntm import NTM
-from optimizers import RMSProp
-from util import gradCheck, serialize, deserialize, visualize
+from util.sequences import copy_sequence
+from ntm.ntm import NTM
+from util.optimizers import RMSProp
+from util.util import gradCheck, serialize, deserialize, visualize
 import sys
 import warnings
 import time
@@ -18,7 +18,7 @@ np.random.seed(0)
 GRAD_CHECK = False
 TEST_MODE  = True
 
-inFile  = 'best_15.pkl' 
+inFile  = 'saved_models/best_15.pkl' 
 #inFile = None
 vec_size = 3
 
@@ -61,8 +61,7 @@ while True:
 
   # train on sequences of length from 1 to (max_length - 1)
   seq_length = np.random.randint(10,11)
-  i, t = sequences.copy_sequence(seq_length, vec_size) 
-  #i, t = sequences.easy_copy(seq_length, vec_size) 
+  i, t = copy_sequence(seq_length, vec_size) 
   inputs = np.matrix(i)
   targets = np.matrix(t)
 

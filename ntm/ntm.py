@@ -3,7 +3,7 @@ NTM with feed-forward controller, using autodiff
 """
 import autograd.numpy as np
 from autograd import grad
-from util import rando, sigmoid, softmax, softplus
+from util.util import rando, sigmoid, softmax, softplus
 import memory
 import addressing
 import sys
