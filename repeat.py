@@ -16,10 +16,10 @@ np.random.seed(0)
 
 # Set to True to perform gradient checking
 GRAD_CHECK = False
-TEST_MODE  = False
+TEST_MODE  = True
 
-#inFile = 'best_15.pkl' 
-inFile = None
+inFile = 'best_repeat.pkl' 
+#inFile = None
 vec_size = 3
 
 # TODO: when deserializing, set these automatically
@@ -64,7 +64,7 @@ while True:
 
   # train on sequences of length from 1 to (max_length - 1)
   seq_length = np.random.randint(1,3)
-  repeats    = np.random.randint(1,4)
+  repeats    = np.random.randint(1,3)
   i, t = sequences.repeat_copy(seq_length, vec_size, repeats, max_repeats)
   inputs = np.matrix(i)
   targets = np.matrix(t)
@@ -78,7 +78,6 @@ while True:
 
   # sometimes print out diagnostic info
   if verbose or TEST_MODE:
-    #TODO: this is where we will stick the better visualization
     print 'iter %d' % (n)
     hi = inputs.shape[1] - 1
     wi = inputs.shape[0]

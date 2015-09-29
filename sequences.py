@@ -21,7 +21,7 @@ def copy_sequence(seq_length, vec_size):
 
   in_sequence = np.random.randint(2, size=(seq_length, input_size))
   in_sequence[:,-2:] = 0
-  out_sequence = in_sequence[:,:-1]
+  out_sequence = in_sequence[:,:-2]
 
   # set start bit in inputs
   start_vec = np.zeros(input_size)
