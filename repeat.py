@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import autograd.numpy as np
-from util.sequences import repeat_copy
+from util.sequences import SequenceGen
 from ntm.ntm import NTM
 from util.optimizers import RMSProp
 from util.util import gradCheck, serialize, deserialize, visualize
@@ -22,10 +22,8 @@ inFile = 'saved_models/best_repeat.pkl'
 #inFile = None
 vec_size = 3
 
-# TODO: when deserializing, set these automatically
-# TODO: each type of sequence should somehow generate the out and in sizes
-out_size = vec_size + 1# Size of output bit vector at each time step
-in_size = vec_size + 2 # Input vector size, bigger because of start+stop bits
+seq = SequenceGen('repeat_copy', vec_size)
+
 hidden_size = 100 # Size of hidden layer of neurons
 
 max_length = 6
@@ -37,7 +35,7 @@ rms_lr    = 10e-5
 rms_decay = 0.95
 rms_blend = 0.95
 # An object that keeps the network state during training.
-model = NTM(in_size, out_size, hidden_size, N, M)
+model = NTM(seq.in_size, seq.out_size, hidden_size, N, M)
 
 if inFile is not None:
   model.weights = deserialize(inFile)
@@ -65,7 +63,7 @@ while True:
   # train on sequences of length from 1 to (max_length - 1)
   seq_length = np.random.randint(1,3)
   repeats    = np.random.randint(1,3)
-  i, t = repeat_copy(seq_length, vec_size, repeats, max_repeats)
+  i, t = seq.make(seq_length, vec_size, repeats, max_repeats)
   inputs = np.matrix(i)
   targets = np.matrix(t)
 

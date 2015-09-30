@@ -24,7 +24,6 @@ vec_size = 3
 
 seq = SequenceGen('copy', vec_size)
 
-# TODO: when deserializing, set these automatically
 hidden_size = 100 # Size of hidden layer of neurons
 
 max_length = 6
