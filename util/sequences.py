@@ -64,20 +64,6 @@ def repeat_copy(seq_length, vec_size, repeats, max_repeats):
 
   After the input sequence, we get a scalar on the scalar channel,
   and we need to copy the sequence that number of times and emit the end marker.
-
-  We want the input to always be the same length.
-
-  If we will train on sequences of length 5 repeated up to 5 times
-  and test on sequences of length 10 repeated up to 10 times, then
-  every input should be the length it would be if we had a sequence of
-  length 10 repeated 10 times.
-
-  The repeat task has vec_size, plus the start channel, plus the scalar channel.
-  So it's input_size = vec_size + 2
-  output has vec_size, plus the stop channel, so output
-  For the sequence, we see a start, then seq_length, then scalar
-  then 10*seq_length, then the stop bit
-  so this is 3 + (10+1)*seq_length
   """
   r = min(max_repeats, repeats)
   input_size  = vec_size + 2
@@ -116,6 +102,16 @@ def repeat_copy(seq_length, vec_size, repeats, max_repeats):
   outputs[b] = finish_vec
   return inputs, outputs
 
-# i, t = repeat_copy(1,3,2)
-# print i
-# print t
+class SequenceGen(object):
+
+  def __init__(self, sequenceType, vec_size):
+    if sequenceType == 'copy':
+      self.out_size = vec_size
+      self.in_size  = vec_size + 2
+      self.make     = copy_sequence
+    elif sequenceType == 'repeat_copy':
+      self.out_size = vec_size + 1
+      self.in_size  = vec_size + 2
+      self.make     = repeat_copy
+    else:
+      raise NotImplementedError

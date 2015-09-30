@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import autograd.numpy as np
-from util.sequences import copy_sequence
+from util.sequences import SequenceGen
 from ntm.ntm import NTM
 from util.optimizers import RMSProp
 from util.util import gradCheck, serialize, deserialize, visualize
@@ -22,9 +22,9 @@ inFile  = 'saved_models/best_15.pkl'
 #inFile = None
 vec_size = 3
 
+seq = SequenceGen('copy', vec_size)
+
 # TODO: when deserializing, set these automatically
-out_size = vec_size # Size of output bit vector at each time step
-in_size = vec_size + 2 # Input vector size, bigger because of start+stop bits
 hidden_size = 100 # Size of hidden layer of neurons
 
 max_length = 6
@@ -32,11 +32,12 @@ N = 15
 M = 7
 
 # RMSProp params - graves says momentum 0.9
+# TODO: make these defaults of optimizer
 rms_lr    = 10e-5
 rms_decay = 0.95
 rms_blend = 0.95
 # An object that keeps the network state during training.
-model = NTM(in_size, out_size, hidden_size, N, M)
+model = NTM(seq.in_size, seq.out_size, hidden_size, N, M)
 
 if inFile is not None:
   model.weights = deserialize(inFile)
@@ -61,7 +62,7 @@ while True:
 
   # train on sequences of length from 1 to (max_length - 1)
   seq_length = np.random.randint(10,11)
-  i, t = copy_sequence(seq_length, vec_size) 
+  i, t = seq.make(seq_length, vec_size) 
   inputs = np.matrix(i)
   targets = np.matrix(t)
 
@@ -74,7 +75,6 @@ while True:
 
   # sometimes print out diagnostic info
   if verbose or TEST_MODE:
-    #TODO: this is where we will stick the better visualization
     print 'iter %d' % (n)
     hi = inputs.shape[1] - 2
     wi = inputs.shape[0] 
