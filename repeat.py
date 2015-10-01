@@ -30,10 +30,6 @@ max_length = 6
 N = 5
 M = 7
 
-# RMSProp params - graves says momentum 0.9
-rms_lr    = 10e-5
-rms_decay = 0.95
-rms_blend = 0.95
 # An object that keeps the network state during training.
 model = NTM(seq.in_size, seq.out_size, hidden_size, N, M)
 
