@@ -37,7 +37,7 @@ if inFile is not None:
   model.weights = deserialize(inFile)
 
 # An object that keeps the optimizer state during training
-optimizer = RMSProp(model.weights, rms_lr, rms_decay, rms_blend)
+optimizer = RMSProp(model.weights)
 
 max_repeats = 5
 
