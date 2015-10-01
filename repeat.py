@@ -39,8 +39,6 @@ if inFile is not None:
 # An object that keeps the optimizer state during training
 optimizer = RMSProp(model.weights)
 
-max_repeats = 5
-
 n = 0 # counts the number of sequences trained on
 
 npc = 1 # keeps track of trailing bpc
