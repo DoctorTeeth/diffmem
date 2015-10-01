@@ -102,7 +102,8 @@ def toArray(dic,h,w):
   out = np.reshape(outC,(h,w))
   return out
 
-def visualize(inputs, outputs, reads, writes, adds, erases, hi, wi):
+def visualize(inputs, outputs, reads, writes, adds, erases, hi):
+  wi = inputs.shape[0]
   np.set_printoptions(formatter={'float': '{: 0.1f}'.format}, linewidth=150)
   out = toArray(outputs, hi, wi)
   r = toArray(reads  , reads[0].shape[0] , wi)
