@@ -59,7 +59,7 @@ while True:
   # train on sequences of length from 1 to (max_length - 1)
   seq_length = np.random.randint(1,3)
   repeats    = np.random.randint(1,3)
-  i, t = seq.make(seq_length, vec_size, repeats, max_repeats)
+  i, t = seq.make(seq_length, vec_size, repeats)
   inputs = np.matrix(i)
   targets = np.matrix(t)
 

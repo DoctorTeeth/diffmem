@@ -55,7 +55,7 @@ def easy_copy(seq_length, vec_size):
   inputs[seq_length+2:-1,-1] = 1
   return inputs, outputs
 
-def repeat_copy(seq_length, vec_size, repeats, max_repeats):
+def repeat_copy(seq_length, vec_size, repeats):
   """
   Returns inputs, outputs
 
@@ -65,10 +65,10 @@ def repeat_copy(seq_length, vec_size, repeats, max_repeats):
   After the input sequence, we get a scalar on the scalar channel,
   and we need to copy the sequence that number of times and emit the end marker.
   """
-  r = min(max_repeats, repeats)
+  r = repeats
   input_size  = vec_size + 2
   output_size = vec_size + 1
-  length  = seq_length * (max_repeats+1) + 3
+  length  = seq_length * (r+1) + 3
   inputs  = np.zeros((length,input_size),dtype=np.float32)
   outputs = np.zeros((length,output_size),dtype=np.float32)
 
