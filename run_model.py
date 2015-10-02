@@ -52,8 +52,7 @@ optimizer = RMSProp(model.weights)
 
 n = 0 # counts the number of sequences trained on
 
-npc = 1 # keeps track of trailing bpc
-# TODO: we can't just initialize this to none
+npc = None # keeps track of trailing bpc
 # TODO: we ought to be using bits instead of nats
 
 while True:
@@ -70,7 +69,10 @@ while True:
   loss, deltas, outputs, r, w, a, e = model.lossFun(inputs, targets, verbose)
 
   newnpc = np.sum(loss) / ((seq_len*2 + 2) * vec_size)
-  npc = 0.99 * npc + 0.01 * newnpc
+  if npc is not None:
+    npc = 0.99 * npc + 0.01 * newnpc
+  else:
+    npc = newnpc
 
   # sometimes print out diagnostic info
   if verbose or args.test_mode:

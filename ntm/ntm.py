@@ -12,7 +12,6 @@ class NTM(object):
 
   def __init__(self, in_size, out_size, hidden_size, N, M):
 
-    # TODO: abstract so that we can have multiple gates of both types 
     self.N = N  # the number of memory locations
     self.M = M # the number of columns in a memory location
     self.out_size = out_size
@@ -218,8 +217,8 @@ class NTM(object):
         ts[t] = np.reshape(np.array(targets[t]),(self.out_size,1))
 
         epsilon = 2**-23 # to prevent log(0)
-        a = np.multiply(ts[t] , np.log(ps[t] + epsilon))
-        b = np.multiply(one - ts[t], np.log(one-ps[t] + epsilon))
+        a = np.multiply(ts[t] , np.log2(ps[t] + epsilon))
+        b = np.multiply(one - ts[t], np.log2(one-ps[t] + epsilon))
         loss = loss - (a + b)
 
         # read from the memory
