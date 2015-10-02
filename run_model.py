@@ -25,6 +25,10 @@ parser.add_argument("--M", help="the number of cells in a memory location",
                     default=7, type=int)
 parser.add_argument("--vec_size", help="width of input vector (the paper uses 8)",
                     default=3, type=int)
+parser.add_argument("--hi", help="upper bound on seq length",
+                    default=3, type=int)
+parser.add_argument("--lo", help="lower bound on seq length",
+                    default=1, type=int)
 parser.add_argument("--serialize_to", help="where to save models",
                     default=None)
 parser.add_argument('--test_mode', dest='test_mode', action='store_true')
@@ -43,7 +47,7 @@ warnings.simplefilter("error")
 
 vec_size = args.vec_size
 
-seq = SequenceGen(args.task, vec_size)
+seq = SequenceGen(args.task, vec_size, args.hi, args.lo)
 
 hidden_size = 100 # Size of hidden layer of neurons
 

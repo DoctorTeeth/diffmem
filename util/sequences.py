@@ -102,29 +102,22 @@ def repeat_copy(seq_len, vec_size, repeats):
   outputs[b] = finish_vec
   return inputs, outputs, seq_len
 
-# Default parameters for different sequences
-copy_lo = 10
-copy_hi = 10
-
-repeat_lo = 1
-repeat_hi = 2
-
 class SequenceGen(object):
 
-  def __init__(self, sequenceType, vec_size):
+  def __init__(self, sequenceType, vec_size, hi, lo):
     if sequenceType == 'copy':
       self.out_size = vec_size
       self.in_size  = vec_size + 2
       def make():
-        seq_len = np.random.randint(copy_lo, copy_hi + 1)
+        seq_len = np.random.randint(lo, hi + 1)
         return copy_sequence(seq_len, vec_size)
       self.make = make
     elif sequenceType == 'repeat_copy':
       self.out_size = vec_size + 1
       self.in_size  = vec_size + 2
       def make():
-        seq_len = np.random.randint(repeat_lo, repeat_hi + 1)
-        repeats = np.random.randint(repeat_lo, repeat_hi + 1)
+        seq_len = np.random.randint(lo, hi + 1)
+        repeats = np.random.randint(lo, hi + 1)
         return repeat_copy(seq_len, vec_size, repeats)
       self.make = make
     else:
