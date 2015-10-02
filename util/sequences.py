@@ -108,10 +108,10 @@ class SequenceGen(object):
     if sequenceType == 'copy':
       self.out_size = vec_size
       self.in_size  = vec_size + 2
-      self.make     = copy_sequence
+      self.make     = lambda x: copy_sequence(x, vec_size)
     elif sequenceType == 'repeat_copy':
       self.out_size = vec_size + 1
       self.in_size  = vec_size + 2
-      self.make     = repeat_copy
+      self.make     = lambda x , y : repeat_copy(x,vec_size,y)
     else:
       raise NotImplementedError
