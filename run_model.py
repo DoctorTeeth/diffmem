@@ -53,7 +53,6 @@ optimizer = RMSProp(model.weights)
 n = 0 # counts the number of sequences trained on
 
 npc = None # keeps track of trailing bpc
-# TODO: we ought to be using bits instead of nats
 
 while True:
 
@@ -79,16 +78,15 @@ while True:
     print 'iter %d' % (n)
     visualize(inputs, outputs, r, w, a, e)
 
-    # check on the fancy quotients
+    # log ratio of delta l2 norm to weight l2 norm
     print "FANCY:"
     for name, q in zip(model.names, optimizer.qs):
       print name + ": " + str(q)
 
-    # calculate the NPC
     print "totalnpc: ", npc
     print "thisnpc: ", newnpc
 
-    # always serialize
+    # serialize
     timestring = time.strftime("%Y-%m-%d-%h-%m-%s")
     filename = 'serializations/params_n-' + str(n) + '_' + timestring  + '.pkl'
     serialize(filename,model.weights)
