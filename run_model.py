@@ -11,10 +11,17 @@ import warnings
 import time
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--verbosity", help="increase output verbosity")
+parser.add_argument("--model", help="location of the serialized model",
+                    default=None)
+parser.add_argument("--task", help="the task to train or test on",
+                    default='copy')
+parser.add_argument("--N", help="the number of memory locations",
+                    default=15, type=int)
+parser.add_argument("--M", help="the number of cells in a memory location",
+                    default=7, type=int)
+parser.add_argument("--vec_size", help="width of input vector (the paper uses 8)",
+                    default=3, type=int)
 args = parser.parse_args()
-if args.verbosity:
-  print "verbosity turned on"
 
 warnings.simplefilter("error")
 
@@ -25,23 +32,20 @@ np.random.seed(0)
 GRAD_CHECK = False
 TEST_MODE  = True
 
-inFile  = 'saved_models/best_15.pkl' 
-#inFile = None
-vec_size = 3
+vec_size = args.vec_size
 
-seq = SequenceGen('copy', vec_size)
+seq = SequenceGen(args.task, vec_size)
 
 hidden_size = 100 # Size of hidden layer of neurons
 
-max_length = 6
-N = 15
-M = 7
+N = args.N
+M = args.M
 
 # An object that keeps the network state during training.
 model = NTM(seq.in_size, seq.out_size, hidden_size, N, M)
 
-if inFile is not None:
-  model.weights = deserialize(inFile)
+if args.model is not None:
+  model.weights = deserialize(args.model)
 
 # An object that keeps the optimizer state during training
 optimizer = RMSProp(model.weights)
@@ -56,18 +60,13 @@ while True:
 
   if (n % 100) == 0:
     verbose = True
-    # if npc < 0.01:
-    #     max_length = min(max_length + 1, 21)
   else:
     verbose = False
 
-  # train on sequences of length from 1 to (max_length - 1)
   i, t, seq_len = seq.make()
   inputs = np.matrix(i)
   targets = np.matrix(t)
 
-  # forward seq_len characters through the net and fetch gradient
-  # deltas is a list of deltas oriented same as list of weights
   loss, deltas, outputs, r, w, a, e = model.lossFun(inputs, targets, verbose)
 
   newnpc = np.sum(loss) / ((seq_len*2 + 2) * vec_size)
@@ -79,7 +78,6 @@ while True:
     visualize(inputs, outputs, r, w, a, e)
 
     # check on the fancy quotients
-    print "max_length: ", max_length
     print "FANCY:"
     for name, q in zip(model.names, optimizer.qs):
       print name + ": " + str(q)
