@@ -55,16 +55,15 @@ while True:
     verbose = False
 
   # train on sequences of length from 1 to (max_length - 1)
-  seq_length = np.random.randint(10,11)
-  i, t = seq.make(seq_length) 
+  i, t, seq_len = seq.make()
   inputs = np.matrix(i)
   targets = np.matrix(t)
 
-  # forward seq_length characters through the net and fetch gradient
+  # forward seq_len characters through the net and fetch gradient
   # deltas is a list of deltas oriented same as list of weights
   loss, deltas, outputs, r, w, a, e = model.lossFun(inputs, targets, verbose)
 
-  newnpc = np.sum(loss) / ((seq_length*2 + 2) * vec_size)
+  newnpc = np.sum(loss) / ((seq_len*2 + 2) * vec_size)
   npc = 0.99 * npc + 0.01 * newnpc
 
   # sometimes print out diagnostic info
