@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import autograd.numpy as np
 from util.sequences import SequenceGen
 from ntm.ntm import NTM
@@ -8,6 +9,12 @@ from util.util import gradCheck, serialize, deserialize, visualize
 import sys
 import warnings
 import time
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--verbosity", help="increase output verbosity")
+args = parser.parse_args()
+if args.verbosity:
+  print "verbosity turned on"
 
 warnings.simplefilter("error")
 
