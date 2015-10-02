@@ -10,6 +10,9 @@ import sys
 import warnings
 import time
 
+# Comment next line to remove determinism
+np.random.seed(0)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", help="location of the serialized model",
                     default=None)
@@ -21,16 +24,13 @@ parser.add_argument("--M", help="the number of cells in a memory location",
                     default=7, type=int)
 parser.add_argument("--vec_size", help="width of input vector (the paper uses 8)",
                     default=3, type=int)
+parser.add_argument("--grad_check", help="whether to check the gradients",
+                    default=False, type=bool)
+parser.add_argument("--test_mode", help="whether to run in test mode",
+                    default=True, type=bool)
 args = parser.parse_args()
 
 warnings.simplefilter("error")
-
-# Comment next line to remove determinism
-np.random.seed(0)
-
-# Set to True to perform gradient checking
-GRAD_CHECK = False
-TEST_MODE  = True
 
 vec_size = args.vec_size
 
@@ -73,7 +73,7 @@ while True:
   npc = 0.99 * npc + 0.01 * newnpc
 
   # sometimes print out diagnostic info
-  if verbose or TEST_MODE:
+  if verbose or args.test_mode:
     print 'iter %d' % (n)
     visualize(inputs, outputs, r, w, a, e)
 
@@ -91,14 +91,14 @@ while True:
     filename = 'serializations/params_n-' + str(n) + '_' + timestring  + '.pkl'
     serialize(filename,model.weights)
 
-    if GRAD_CHECK:
+    if args.grad_check:
       # Check weights using finite differences
       check = gradCheck(model, deltas, inputs, targets, 1e-5, 1e-7)
       print "PASS DIFF CHECK?: ", check
       if not check:
         sys.exit(1)
 
-  if not TEST_MODE:
+  if not args.test_mode:
     optimizer.update_weights(model.weights, deltas)
 
   n += 1
