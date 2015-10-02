@@ -7,6 +7,7 @@ from ntm.ntm import NTM
 from util.optimizers import RMSProp
 from util.util import gradCheck, serialize, deserialize, visualize
 import sys
+import os
 import warnings
 import time
 
@@ -24,11 +25,19 @@ parser.add_argument("--M", help="the number of cells in a memory location",
                     default=7, type=int)
 parser.add_argument("--vec_size", help="width of input vector (the paper uses 8)",
                     default=3, type=int)
-parser.add_argument("--grad_check", help="whether to check the gradients",
-                    default=False, type=bool)
-parser.add_argument("--test_mode", help="whether to run in test mode",
-                    default=True, type=bool)
+parser.add_argument("--serialize_to", help="where to save models",
+                    default=None)
+parser.add_argument('--test_mode', dest='test_mode', action='store_true')
+parser.add_argument('--grad_check', dest='grad_check', action='store_true')
+parser.set_defaults(test_mode=False)
+parser.set_defaults(grad_check=False)
 args = parser.parse_args()
+
+if args.serialize_to is not None:
+  try:
+    os.mkdir(args.serialize_to)
+  except OSError:
+    pass
 
 warnings.simplefilter("error")
 
@@ -86,10 +95,11 @@ while True:
     print "totalnpc: ", npc
     print "thisnpc: ", newnpc
 
-    # serialize
-    timestring = time.strftime("%Y-%m-%d-%h-%m-%s")
-    filename = 'serializations/params_n-' + str(n) + '_' + timestring  + '.pkl'
-    serialize(filename,model.weights)
+    # maybe serialize
+    if args.serialize_to is not None:
+        timestring = time.strftime("%Y-%m-%d-%h-%m-%s")
+        filename = args.serialize_to + '/params_n-' + str(n) + '_' + timestring  + '.pkl'
+        serialize(filename,model.weights)
 
     if args.grad_check:
       # Check weights using finite differences

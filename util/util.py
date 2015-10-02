@@ -45,12 +45,12 @@ def getDiffs(model, deltas, inputs, targets, epsilon):
 
         # compute f(x+h) for that weight
         W[i,j] += epsilon
-        loss, ds, os = model.lossFun(inputs, targets, False)
+        loss, ds, os, _, _, _, _  = model.lossFun(inputs, targets, False)
         loss_plus = np.sum(loss)
 
         # compute f(x - h) for that weight
         W[i,j] -= epsilon*2
-        loss, ds, os = model.lossFun(inputs, targets, False)
+        loss, ds, os, _, _, _, _ = model.lossFun(inputs, targets, False)
         loss_minus = np.sum(loss)
 
         # grad check must leave weights unchanged
