@@ -71,8 +71,7 @@ while True:
   # sometimes print out diagnostic info
   if verbose or TEST_MODE:
     print 'iter %d' % (n)
-    hi = inputs.shape[1] - 1
-    visualize(inputs, outputs, r, w, a, e, hi)
+    visualize(inputs, outputs, r, w, a, e)
 
     # check on the fancy quotients
     print "max_length: ", max_length
