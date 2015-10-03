@@ -10,6 +10,7 @@ import sys
 import os
 import warnings
 import time
+import pdb
 
 # Comment next line to remove determinism
 np.random.seed(0)
@@ -58,10 +59,10 @@ M = args.M
 model = NTM(seq.in_size, seq.out_size, hidden_size, N, M)
 
 if args.model is not None:
-  model.weights = deserialize(args.model)
+  model.W = deserialize(args.model)
 
 # An object that keeps the optimizer state during training
-optimizer = RMSProp(model.weights)
+optimizer = RMSProp(model.W)
 
 n = 0 # counts the number of sequences trained on
 
@@ -93,8 +94,8 @@ while True:
 
     # log ratio of delta l2 norm to weight l2 norm
     print "FANCY:"
-    for name, q in zip(model.names, optimizer.qs):
-      print name + ": " + str(q)
+    for k in model.W.keys():
+      print k + ": " + str(optimizer.qs[k])
 
     print "totalnpc: ", npc
     print "thisnpc: ", newnpc
@@ -103,7 +104,7 @@ while True:
     if args.serialize_to is not None:
         timestring = time.strftime("%Y-%m-%d-%h-%m-%s")
         filename = args.serialize_to + '/params_n-' + str(n) + '_' + timestring  + '.pkl'
-        serialize(filename,model.weights)
+        serialize(filename,model.W)
 
     if args.grad_check:
       # Check weights using finite differences
@@ -113,6 +114,6 @@ while True:
         sys.exit(1)
 
   if not args.test_mode:
-    optimizer.update_weights(model.weights, deltas)
+    optimizer.update_weights(model.W, deltas)
 
   n += 1

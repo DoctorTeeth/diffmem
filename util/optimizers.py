@@ -1,11 +1,12 @@
 import autograd.numpy as np
+import pdb
 
 def l2(x):
   return np.sqrt(np.sum(np.multiply(x,x)))
 
 class RMSProp(object):
 
-  def __init__(self, weights, learning_rate=10e-5, decay=0.95, blend=0.95):
+  def __init__(self, W, learning_rate=10e-5, decay=0.95, blend=0.95):
     """
     learning rate governs how much we use the computed grad
     decay governs how quickly accumulated momentum drops off
@@ -16,27 +17,29 @@ class RMSProp(object):
     self.d = decay
     self.b = blend
 
-    self.ns = []
-    self.gs = []
-    self.ms = [] # momentum
-    self.qs = [] # update norm over param norm - want this to stay around 10e-3
-    self.lrs = []
-    for tensor in weights:
-      self.ns.append(np.zeros_like(tensor))
-      self.gs.append(np.zeros_like(tensor))
-      self.ms.append(np.zeros_like(tensor))
-      self.qs.append(self.lr)
-      self.lrs.append(self.lr)
+    self.ns  = {}
+    self.gs  = {}
+    self.ms  = {} # momentum
+    self.qs  = {} # update norm over param norm - want this to stay around 10e-3
+    self.lrs = {}
+    for k, v in W.iteritems():
+      self.ns[k]  = np.zeros_like(v)
+      self.gs[k]  = np.zeros_like(v)
+      self.ms[k]  = np.zeros_like(v)
+      self.qs[k]  = self.lr
+      self.lrs[k] = self.lr
 
   def update_weights(self, params, dparams):
-    for p, d, i in zip(params,
-                       dparams,
-                       range(0,len(params))):
+    for k in params.keys():
+      p = params[k]
+      d = dparams[k]
+
+      # pdb.set_trace()
       d = np.clip(d,-10,10)
-      self.ns[i] = self.b * self.ns[i] + (1 - self.b) * (d*d)
-      self.gs[i] = self.b * self.gs[i] + (1 - self.b) * d
-      n = self.ns[i]
-      g = self.gs[i]
-      self.ms[i] = self.d * self.ms[i] - self.lrs[i] * (d / (np.sqrt(n - g*g + 1e-8)))
-      self.qs[i] = self.b * self.qs[i] + (1 - self.b) * (l2(self.ms[i]) / l2(p))
-      p += self.ms[i]
+      self.ns[k] = self.b * self.ns[k] + (1 - self.b) * (d*d)
+      self.gs[k] = self.b * self.gs[k] + (1 - self.b) * d
+      n = self.ns[k]
+      g = self.gs[k]
+      self.ms[k] = self.d * self.ms[k] - self.lrs[k] * (d / (np.sqrt(n - g*g + 1e-8)))
+      self.qs[k] = self.b * self.qs[k] + (1 - self.b) * (l2(self.ms[k]) / l2(p))
+      p += self.ms[k]
