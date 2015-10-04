@@ -6,14 +6,16 @@ from util.sequences import SequenceGen
 from ntm.ntm import NTM
 from util.optimizers import RMSProp
 from util.util import gradCheck, serialize, deserialize, visualize
-import sys
 import os
 import warnings
 import time
-import pdb
 
 # Comment next line to remove determinism
 np.random.seed(0)
+
+# TODO: remove below line
+# exit and give stack trace on errors
+warnings.simplefilter("error")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", help="location of the serialized model",
@@ -38,36 +40,35 @@ parser.set_defaults(test_mode=False)
 parser.set_defaults(grad_check=False)
 args = parser.parse_args()
 
+# create directory for serializations if necessary
 if args.serialize_to is not None:
   try:
     os.mkdir(args.serialize_to)
   except OSError:
     pass
 
-warnings.simplefilter("error")
-
-vec_size = args.vec_size
-
-seq = SequenceGen(args.task, vec_size, args.hi, args.lo)
-
-hidden_size = 100 # Size of hidden layer of neurons
-
-N = args.N
-M = args.M
-
-# An object that keeps the network state during training.
-model = NTM(seq.in_size, seq.out_size, hidden_size, N, M)
-
-if args.model is not None:
-  model.W = deserialize(args.model)
+# deserialize saved model if path given
+if args.model is None:
+  # If not using a saved model, initialize from params
+  vec_size = args.vec_size
+  seq = SequenceGen(args.task, vec_size, args.hi, args.lo)
+  hidden_size = 100 # Size of hidden layer of neurons
+  N = args.N # number of memory locations
+  M = args.M # size of a memory location
+  model = NTM(seq.in_size, seq.out_size, hidden_size, N, M, vec_size)
+else:
+  # otherwise, load the model from specified file
+  model = deserialize(args.model)
+  vec_size = model.vec_size # vec size comes from model
+  seq = SequenceGen(args.task, vec_size, args.hi, args.lo)
 
 # An object that keeps the optimizer state during training
 optimizer = RMSProp(model.W)
 
 n = 0 # counts the number of sequences trained on
+bpc = None # keeps track of trailing bpc (cost)
 
-npc = None # keeps track of trailing bpc
-
+# train forever
 while True:
 
   if (n % 100) == 0:
@@ -81,11 +82,11 @@ while True:
 
   loss, deltas, outputs, r, w, a, e = model.lossFun(inputs, targets, verbose)
 
-  newnpc = np.sum(loss) / ((seq_len*2 + 2) * vec_size)
-  if npc is not None:
-    npc = 0.99 * npc + 0.01 * newnpc
+  newbpc = np.sum(loss) / ((seq_len*2 + 2) * vec_size)
+  if bpc is not None:
+    bpc = 0.99 * bpc + 0.01 * newbpc
   else:
-    npc = newnpc
+    bpc = newbpc
 
   # sometimes print out diagnostic info
   if verbose or args.test_mode:
@@ -93,25 +94,23 @@ while True:
     visualize(inputs, outputs, r, w, a, e)
 
     # log ratio of delta l2 norm to weight l2 norm
-    print "FANCY:"
+    print "update/weight ratios:"
     for k in model.W.keys():
       print k + ": " + str(optimizer.qs[k])
 
-    print "totalnpc: ", npc
-    print "thisnpc: ", newnpc
+    print "trailing bpc estimate: ", bpc
+    print "this bpc: ", newbpc
 
     # maybe serialize
     if args.serialize_to is not None:
-        timestring = time.strftime("%Y-%m-%d-%h-%m-%s")
-        filename = args.serialize_to + '/params_n-' + str(n) + '_' + timestring  + '.pkl'
-        serialize(filename,model.W)
+      timestring = time.strftime("%Y-%m-%d-%h-%m-%s")
+      filename = args.serialize_to + '/params_n-' + str(n) + '_' + timestring  + '.pkl'
+      serialize(filename,model)
 
     if args.grad_check:
       # Check weights using finite differences
       check = gradCheck(model, deltas, inputs, targets, 1e-5, 1e-7)
       print "PASS DIFF CHECK?: ", check
-      if not check:
-        sys.exit(1)
 
   if not args.test_mode:
     optimizer.update_weights(model.W, deltas)

@@ -11,11 +11,12 @@ import pdb
 
 class NTM(object):
 
-  def __init__(self, in_size, out_size, hidden_size, N, M):
+  def __init__(self, in_size, out_size, hidden_size, N, M, vec_size):
 
     self.N = N  # the number of memory locations
     self.M = M # the number of columns in a memory location
     self.out_size = out_size
+    self.vec_size = vec_size
 
     self.W = {} # maps parameter names to tensors
 
