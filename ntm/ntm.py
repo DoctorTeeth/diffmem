@@ -71,10 +71,10 @@ class NTM(object):
     self.W['erases'] = rando(self.M,1)
 
     # initialize some recurrent things to bias values
-    self.rsInit = np.random.uniform(-1,1,(self.M,1))
-    self.memsInit = np.random.randn(self.N,self.M)*0.01
-    self.w_ws_initInit = np.random.randn(self.N,1)*0.01
-    self.w_rs_initInit = np.random.randn(self.N,1)*0.01
+    self.W['rsInit'] = np.random.uniform(-1,1,(self.M,1))
+    self.W['memsInit'] = np.random.randn(self.N,self.M)*0.01
+    self.W['w_wsInit'] = np.random.randn(self.N,1)*0.01
+    self.W['w_rsInit'] = np.random.randn(self.N,1)*0.01
 
 
   def lossFun(self, inputs, targets, verbose):
@@ -96,12 +96,10 @@ class NTM(object):
       w_ws, w_rs = {},{} # read weights and write weights
       mems = {} # the state of the memory at every timestep
       # rs stores the value read out of memory
-      rs[-1] = self.rsInit 
-      mems[-1] = self.memsInit 
-      w_ws_init = self.w_ws_initInit
-      w_rs_init = self.w_rs_initInit
-      w_ws[-1] = softmax(w_ws_init)
-      w_rs[-1] = softmax(w_rs_init)
+      rs[-1] = self.W['rsInit'] 
+      mems[-1] = self.W['memsInit'] 
+      w_ws[-1] = softmax(self.W['w_wsInit'])
+      w_rs[-1] = softmax(self.W['w_rsInit'])
       loss = 0
 
       for t in xrange(len(inputs)):
