@@ -124,3 +124,16 @@ def visualize(inputs, outputs, reads, writes, adds, erases):
   print a
   print "erases"
   print e
+
+def unwrap(d):
+  if isinstance(d,dict):
+    r = {}
+    for k, v in d.iteritems():
+      if hasattr(v,'value'):
+        r[k] = v.value
+      else:
+        r[k] = v
+    return r
+  else:
+    return d.value
+

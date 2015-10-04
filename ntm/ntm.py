@@ -3,7 +3,7 @@ NTM with feed-forward controller, using autodiff
 """
 import autograd.numpy as np
 from autograd import grad
-from util.util import rando, sigmoid, softmax, softplus
+from util.util import rando, sigmoid, softmax, softplus, unwrap
 import memory
 import addressing
 import sys
@@ -17,6 +17,8 @@ class NTM(object):
     self.M = M # the number of columns in a memory location
     self.out_size = out_size
     self.vec_size = vec_size
+
+    self.stats = None
 
     self.W = {} # maps parameter names to tensors
 
@@ -163,20 +165,14 @@ class NTM(object):
         # write into the memory
         mems[t] = memory.write(mems[t-1],w_ws[t],erases[t],adds[t])
 
-      return loss, ps, w_rs, w_ws, adds, erases
-
-    def training_loss(params):
-
-      # wrap so that autograd works
-      loss, ps, reads, writes, adds, erases = fprop(params)
-      return np.sum(loss) 
+      self.stats = [loss, ps, w_rs, w_ws, adds, erases]
+      return np.sum(loss)
 
     def bprop(params):
-      f = grad(training_loss)
+      f = grad(fprop)
       return f(params)
 
-    # TODO: get rid of this foolery
-    loss, ps, reads, writes, adds, erases = fprop(self.W)
     deltas = bprop(self.W)
+    loss, ps, reads, writes, adds, erases = map(unwrap,self.stats)
 
     return loss, deltas, ps, reads, writes, adds, erases
