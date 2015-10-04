@@ -64,7 +64,6 @@ def getDiffs(model, deltas, inputs, targets, epsilon):
   return diff_tensors 
 
 def rando(out_size,in_size):
-  # TODO: does this even make sense?
   sigma = np.sqrt( 6.0 / (out_size + in_size))
   return np.random.uniform(-sigma, sigma, (out_size, in_size))
 
