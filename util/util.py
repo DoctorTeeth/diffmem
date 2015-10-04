@@ -101,38 +101,55 @@ def toArray(dic,h,w):
   out = np.reshape(outC,(h,w))
   return out
 
+# TODO: make this work on the new heads setup
 def visualize(inputs, outputs, reads, writes, adds, erases):
   wi = inputs.shape[0]
   hi = outputs[0].shape[0]
   np.set_printoptions(formatter={'float': '{: 0.1f}'.format}, linewidth=150)
+  # pdb.set_trace()
   out = toArray(outputs, hi, wi)
-  r = toArray(reads  , reads[0].shape[0] , wi)
-  w = toArray(writes , writes[0].shape[0] , wi)
-  a = toArray(adds   , adds[0].shape[0] , wi)
-  e = toArray(erases , erases[0].shape[0] , wi)
   ins = np.array(inputs.T,dtype='float')
+  heads = len(reads)
+  r,w,a,e = {},{},{},{}
+  for idx in range(heads):
+    r[idx] = toArray(reads[idx]  , reads[0][0].shape[0] , wi)
+    w[idx] = toArray(writes[idx] , writes[0][0].shape[0] , wi)
+    a[idx] = toArray(adds[idx]   , adds[0][0].shape[0] , wi)
+    e[idx] = toArray(erases[idx] , erases[0][0].shape[0] , wi)
   print "inputs: "
   print ins
   print "outputs: "
   print out
-  print "reads"
-  print r
-  print "writes"
-  print w
-  print "adds"
-  print a
-  print "erases"
-  print e
+  for idx in range(heads):
+    print "reads" + str(idx)
+    print r[idx]
+    print "writes" + str(idx)
+    print w[idx]
+    print "adds" + str(idx)
+    print a[idx]
+    print "erases" + str(idx)
+    print e[idx]
 
-def unwrap(d):
-  if isinstance(d,dict):
+def unwrap(x):
+  if isinstance(x,dict):
     r = {}
-    for k, v in d.iteritems():
+    for k, v in x.iteritems():
       if hasattr(v,'value'):
         r[k] = v.value
       else:
         r[k] = v
     return r
+  elif all(isinstance(elt, dict) for elt in x):
+    l = []
+    for d in x:
+      r = {}
+      for k, v in d.iteritems():
+        if hasattr(v,'value'):
+          r[k] = v.value
+        else:
+          r[k] = v
+      l.append(r)
+    return l
   else:
-    return d.value
+    return x.value
 

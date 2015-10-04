@@ -32,6 +32,8 @@ parser.add_argument("--hi", help="upper bound on seq length",
                     default=3, type=int)
 parser.add_argument("--lo", help="lower bound on seq length",
                     default=1, type=int)
+parser.add_argument("--heads", help="number of (pairs of) read and write heads",
+                    default=1, type=int)
 parser.add_argument("--serialize_to", help="where to save models",
                     default=None)
 parser.add_argument('--test_mode', dest='test_mode', action='store_true')
@@ -55,7 +57,8 @@ if args.model is None:
   hidden_size = 100 # Size of hidden layer of neurons
   N = args.N # number of memory locations
   M = args.M # size of a memory location
-  model = NTM(seq.in_size, seq.out_size, hidden_size, N, M, vec_size)
+  heads = args.heads
+  model = NTM(seq.in_size, seq.out_size, hidden_size, N, M, vec_size, heads)
 else:
   # otherwise, load the model from specified file
   model = deserialize(args.model)
