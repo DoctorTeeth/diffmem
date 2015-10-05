@@ -34,6 +34,8 @@ parser.add_argument("--lo", help="lower bound on seq length",
                     default=1, type=int)
 parser.add_argument("--heads", help="number of (pairs of) read and write heads",
                     default=1, type=int)
+parser.add_argument("--units", help="number of hidden units",
+                    default=100, type=int)
 parser.add_argument("--serialize_to", help="where to save models",
                     default=None)
 parser.add_argument('--test_mode', dest='test_mode', action='store_true')
@@ -54,7 +56,7 @@ if args.model is None:
   # If not using a saved model, initialize from params
   vec_size = args.vec_size
   seq = SequenceGen(args.task, vec_size, args.hi, args.lo)
-  hidden_size = 100 # Size of hidden layer of neurons
+  hidden_size = args.units # Size of hidden layer of neurons
   N = args.N # number of memory locations
   M = args.M # size of a memory location
   heads = args.heads
