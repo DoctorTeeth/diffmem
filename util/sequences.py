@@ -142,7 +142,7 @@ def associative_recall(seq_len, vec_size, item_size):
   inputs[b+2 + item_size] = fetch_bit
   # choose a random item to be the prompt
 
-  outputs[b+2+item_size+1:inputs.shape[0]] = items[idx+1]
+  outputs[-items[idx+1].shape[0]:inputs.shape[0]] = items[idx+1]
 
   return inputs, outputs, seq_len
 
