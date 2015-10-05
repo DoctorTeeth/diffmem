@@ -186,8 +186,45 @@ def priority_sort(seq_len, vec_size):
 
   return inputs, outputs, seq_len
 
+def ngrams(seq_len, vec_size):
+  """
+  this is the dynamic n-grams task
+  """
+  input_size  = vec_size + 1
+  output_size = vec_size
+  length  = 2*seq_len + 2
+  inputs  = np.zeros((length,input_size),dtype=np.float32)
+  outputs = np.zeros((length,output_size),dtype=np.float32)
+
+  start_bit = np.zeros((1,input_size))
+  start_bit[0,-2] = 1
+  stop_bit = np.zeros((1,input_size))
+  stop_bit[0,-1] = 1
+
+  inputs[0] = start_bit
+  inputs[seq_len + 1] = stop_bit
+  # now randomly generate seq_len vectors with their
+  # priorities
+  items = []
+  for i in range(0,seq_len):
+    seq = np.random.randint(2, size=(1, vec_size))
+    priority = np.random.uniform(low=-1, high=1)
+    items.append((seq, priority))
+    inputs[i+1,:-1] = seq
+    inputs[i+1,-1] = priority
+
+  items.sort(key=lambda x: x[1])
+
+  # fill in the outputs
+  for i in range(0,seq_len):
+    seq, _ = items[i]
+    outputs[seq_len + 2 + i] = seq
+
+  return inputs, outputs, seq_len
+
 class SequenceGen(object):
 
+  # TODO: add last 3 tasks to this
   def __init__(self, sequenceType, vec_size, hi, lo):
     if sequenceType == 'copy':
       self.out_size = vec_size
@@ -204,9 +241,17 @@ class SequenceGen(object):
         repeats = np.random.randint(lo, hi + 1)
         return repeat_copy(seq_len, vec_size, repeats)
       self.make = make
+    elif sequenceType == 'associative_recall':
+      self.out_size = vec_size
+      self.in_size  = vec_size + 2
+      item_size = 3 # this is hardcoded for now
+      def make():
+        seq_len = np.random.randint(lo, hi + 1)
+        return associative_recall(seq_len, vec_size, item_size)
+      self.make = make
     else:
       raise NotImplementedError
 
-i, t, l = priority_sort(2, 3)
-print i
-print t
+# i, t, l = ngrams(2, 3)
+# print i
+# print t

@@ -121,13 +121,13 @@ def visualize(inputs, outputs, reads, writes, adds, erases):
   print "outputs: "
   print out
   for idx in range(heads):
-    print "reads" + str(idx)
+    print "reads-" + str(idx)
     print r[idx]
-    print "writes" + str(idx)
+    print "writes-" + str(idx)
     print w[idx]
-    print "adds" + str(idx)
+    print "adds-" + str(idx)
     print a[idx]
-    print "erases" + str(idx)
+    print "erases-" + str(idx)
     print e[idx]
 
 def unwrap(x):
