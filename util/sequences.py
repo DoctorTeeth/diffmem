@@ -142,8 +142,47 @@ def associative_recall(seq_len, vec_size, item_size):
   inputs[b+2 + item_size] = fetch_bit
   # choose a random item to be the prompt
 
-  # pdb.set_trace()
   outputs[b+2+item_size+1:inputs.shape[0]] = items[idx+1]
+
+  return inputs, outputs, seq_len
+
+def priority_sort(seq_len, vec_size):
+  """
+  We show seq_len vectors of vec_size,
+  each with a scalar priority between -1 and 1
+  the expected output then is the sorted sequence of vectors
+  so the total length is 1 bit for start bit, 1 for stop, then
+  2x the seq_len
+  """
+  input_size  = vec_size + 1
+  output_size = vec_size
+  length  = 2*seq_len + 2
+  inputs  = np.zeros((length,input_size),dtype=np.float32)
+  outputs = np.zeros((length,output_size),dtype=np.float32)
+
+  start_bit = np.zeros((1,input_size))
+  start_bit[0,-2] = 1
+  stop_bit = np.zeros((1,input_size))
+  stop_bit[0,-1] = 1
+
+  inputs[0] = start_bit
+  inputs[seq_len + 1] = stop_bit
+  # now randomly generate seq_len vectors with their
+  # priorities
+  items = []
+  for i in range(0,seq_len):
+    seq = np.random.randint(2, size=(1, vec_size))
+    priority = np.random.uniform(low=-1, high=1)
+    items.append((seq, priority))
+    inputs[i+1,:-1] = seq
+    inputs[i+1,-1] = priority
+
+  items.sort(key=lambda x: x[1])
+
+  # fill in the outputs
+  for i in range(0,seq_len):
+    seq, _ = items[i]
+    outputs[seq_len + 2 + i] = seq
 
   return inputs, outputs, seq_len
 
@@ -168,6 +207,6 @@ class SequenceGen(object):
     else:
       raise NotImplementedError
 
-i, t, l = associative_recall(3, 3, 3)
+i, t, l = priority_sort(2, 3)
 print i
 print t
