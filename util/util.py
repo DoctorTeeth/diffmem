@@ -101,7 +101,6 @@ def toArray(dic,h,w):
   out = np.reshape(outC,(h,w))
   return out
 
-# TODO: make this work on the new heads setup
 def visualize(inputs, outputs, reads, writes, adds, erases):
   wi = inputs.shape[0]
   hi = outputs[0].shape[0]
