@@ -268,7 +268,7 @@ class SequenceGen(object):
     elif sequenceType == 'associative_recall':
       self.out_size = vec_size
       self.in_size  = vec_size + 2
-      item_size = 3 # this is hardcoded for now
+      item_size = 1 # this is hardcoded for now
       def make():
         seq_len = np.random.randint(lo, hi + 1)
         return associative_recall(seq_len, vec_size, item_size)
@@ -286,7 +286,7 @@ class SequenceGen(object):
       n = 6 # this is hardcoded for now
       def make():
         seq_len = np.random.randint(lo, hi + 1)
-        return ngram(seq_len, n)
+        return ngrams(seq_len, n)
       self.make = make
     else:
       raise NotImplementedError
