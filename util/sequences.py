@@ -275,7 +275,7 @@ class SequenceGen(object):
       self.make = make
     elif sequenceType == 'priority_sort':
       self.out_size = vec_size
-      self.in_size  = vec_size + 2
+      self.in_size  = vec_size + 1
       def make():
         seq_len = np.random.randint(lo, hi + 1)
         return priority_sort(seq_len, vec_size)
