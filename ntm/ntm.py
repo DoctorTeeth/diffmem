@@ -87,7 +87,7 @@ class NTM(object):
     # TODO: when I look at learning stats, this seems broken?
     self.W['memsInit'] = np.random.randn(self.N,self.M)*0.01
 
-  def lossFun(self, inputs, targets, verbose):
+  def lossFun(self, inputs, targets):
     """
     inputs,targets are both list of integers.
     where in this case, H is hidden_size from above

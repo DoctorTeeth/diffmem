@@ -85,7 +85,7 @@ while True:
   inputs = np.matrix(i)
   targets = np.matrix(t)
 
-  loss, deltas, outputs, r, w, a, e = model.lossFun(inputs, targets, verbose)
+  loss, deltas, outputs, r, w, a, e = model.lossFun(inputs, targets)
 
   newbpc = np.sum(loss) / ((seq_len*2 + 2) * vec_size)
   if bpc is not None:
