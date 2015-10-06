@@ -36,6 +36,10 @@ parser.add_argument("--heads", help="number of (pairs of) read and write heads",
                     default=1, type=int)
 parser.add_argument("--units", help="number of hidden units",
                     default=100, type=int)
+parser.add_argument("--serialize_freq", help="serialize every <this many sequences>",
+                    default=100, type=int)
+parser.add_argument("--log_freq", help="how often to log diagnostic information",
+                    default=100, type=int)
 parser.add_argument("--serialize_to", help="where to save models",
                     default=None)
 parser.add_argument('--test_mode', dest='test_mode', action='store_true')
@@ -76,11 +80,6 @@ bpc = None # keeps track of trailing bpc (cost)
 # train forever
 while True:
 
-  if (n % 100) == 0:
-    verbose = True
-  else:
-    verbose = False
-
   i, t, seq_len = seq.make()
   inputs = np.matrix(i)
   targets = np.matrix(t)
@@ -94,7 +93,7 @@ while True:
     bpc = newbpc
 
   # sometimes print out diagnostic info
-  if verbose or args.test_mode:
+  if ((n % args.log_freq) == 0) or args.test_mode:
     print 'iter %d' % (n)
     visualize(inputs, outputs, r, w, a, e)
 
@@ -106,16 +105,16 @@ while True:
     print "trailing bpc estimate: ", bpc
     print "this bpc: ", newbpc
 
-    # maybe serialize
-    if args.serialize_to is not None:
-      timestring = time.strftime("%Y-%m-%d-%h-%m-%s")
-      filename = args.serialize_to + '/params_n-' + str(n) + '_' + timestring  + '.pkl'
-      serialize(filename,model)
+  # maybe serialize
+  if (args.serialize_to is not None) and (n % args.serialize_freq) == 0:
+    ts = time.strftime("%Y-%m-%d-%h-%m-%s")
+    filename = args.serialize_to + '/params_n-' + str(n) + '_' + ts + '.pkl'
+    serialize(filename,model)
 
-    if args.grad_check:
-      # Check weights using finite differences
-      check = gradCheck(model, deltas, inputs, targets, 1e-5, 1e-7)
-      print "PASS DIFF CHECK?: ", check
+  if args.grad_check:
+    # Check weights using finite differences
+    check = gradCheck(model, deltas, inputs, targets, 1e-5, 1e-7)
+    print "PASS DIFF CHECK?: ", check
 
   if not args.test_mode:
     optimizer.update_weights(model.W, deltas)
