@@ -193,7 +193,7 @@ class NTM(object):
       return f(params)
 
     deltas = bprop(self.W)
-    # pdb.set_trace()
+
     loss, ps, reads, writes, adds, erases = map(unwrap,self.stats)
 
     return loss, deltas, ps, reads, writes, adds, erases

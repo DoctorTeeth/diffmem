@@ -283,7 +283,7 @@ class SequenceGen(object):
     elif sequenceType == 'ngrams':
       self.out_size = 1
       self.in_size  = 1
-      n = 6 # this is hardcoded for now
+      n = 2 # this is hardcoded for now
       def make():
         seq_len = np.random.randint(lo, hi + 1)
         return ngrams(seq_len, n)
