@@ -184,9 +184,154 @@ necessary.
 
 ##### Associative Recall
 
+Doesn't seem necessary to use multiple heads?
+
 ##### Dynamic n-Grams
 
+In this example, we fix a natural number n and then generate a probability table that encodes the likelihood that the next bit in a sequence will be a 1, having observed the last n-1 bits. We generate a new table for each training sequence, and train the model to predict the next bit at all times.
+
+It's hard to generate an engaging visualization of this task, but if you look at the following it's possible you can get a sense of what's going on.
+
+    inputs:
+    [ 1.0  1.0  0.0  0.0  0.0  0.0  1.0  1.0  0.0  1.0  1.0  0.0  1.0  0.0  1.0  0.0  1.0  0.0  1.0  0.0]
+    outputs:
+    [ 0.5  0.8  0.5  0.2  0.2  0.1  0.2  0.5  0.4  0.0  0.2  0.2  0.1  0.1  0.1  0.0  0.1  0.1  0.1  0.1]
+    reads-0
+    [ 0.1  0.1  0.2  0.1  0.1  0.1  0.0  0.0  0.1  0.0  0.0  0.0  0.0  0.5  0.0  0.0  0.0  0.1  0.1  0.1]
+    [ 0.1  0.0  0.0  0.1  0.0  0.1  0.1  0.0  0.0  0.0  0.0  0.0  0.5  0.0  0.0  0.0  0.1  0.1  0.1  0.0]
+    [ 0.1  0.0  0.1  0.0  0.1  0.1  0.0  0.0  0.0  0.0  0.0  0.3  0.0  0.0  0.0  0.1  0.1  0.1  0.0  0.0]
+    [ 0.1  0.2  0.0  0.0  0.1  0.1  0.0  0.0  0.0  0.0  0.5  0.0  0.0  0.0  0.1  0.1  0.0  0.0  0.0  0.0]
+    [ 0.1  0.1  0.0  0.1  0.1  0.1  0.0  0.0  0.0  0.3  0.0  0.0  0.0  0.1  0.1  0.1  0.0  0.0  0.0  0.0]
+    [ 0.1  0.0  0.1  0.1  0.1  0.0  0.0  0.0  0.3  0.0  0.0  0.0  0.1  0.1  0.1  0.0  0.0  0.0  0.0  0.0]
+    [ 0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.4  0.0  0.0  0.0  0.1  0.1  0.1  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.1  0.0  0.0  0.0  0.0  0.0  0.2  0.1  0.0  0.0  0.2  0.1  0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.1  0.0  0.0  0.0  0.0  0.2  0.1  0.1  0.0  0.1  0.1  0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.1  0.1  0.0  0.0  0.2  0.1  0.1  0.0  0.1  0.1  0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.5]
+    [ 0.1  0.1  0.0  0.3  0.1  0.1  0.1  0.2  0.1  0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.5  0.0]
+    [ 0.1  0.1  0.4  0.1  0.1  0.1  0.2  0.1  0.1  0.0  0.0  0.1  0.0  0.0  0.0  0.0  0.0  0.5  0.0  0.0]
+    [ 0.1  0.0  0.0  0.0  0.0  0.1  0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.6  0.0  0.0  0.0]
+    [ 0.1  0.1  0.0  0.0  0.1  0.1  0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.5  0.0  0.0  0.0  0.1]
+    [ 0.1  0.1  0.0  0.1  0.1  0.1  0.0  0.0  0.0  0.1  0.0  0.0  0.0  0.0  0.5  0.0  0.0  0.0  0.1  0.1]
+    writes-0
+    [ 0.0  0.5  0.9  0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.1  0.1  0.1  0.1  0.0  0.1  0.1  0.1]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.1  0.1  0.1  0.1  0.0  0.1  0.1  0.1]
+    [ 0.1  0.0  0.0  0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.1  0.1  0.1  0.1  0.1  0.1  0.1  0.1  0.1  0.1]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.5  0.2  0.2  0.1  0.1  0.1  0.1  0.1  0.1  0.1]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.1  0.0  0.1  0.0  0.1  0.1  0.1  0.0  0.1  0.1  0.1]
+    [ 0.9  0.5  0.1  0.1  0.3  0.2  0.8  1.0  0.9  0.1  0.1  0.1  0.0  0.1  0.1  0.1  0.1  0.1  0.1  0.1]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.1  0.1  0.2  0.3  0.1  0.1  0.1  0.2  0.2  0.2  0.1]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.2  0.0  0.0  0.0  0.1  0.0  0.1  0.0  0.1  0.1  0.1]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.2  0.0  0.1  0.0  0.0  0.0  0.1  0.1  0.1  0.1  0.1]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.1  0.0  0.1  0.0  0.0  0.0  0.0  0.1  0.1  0.1  0.1]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.1  0.0  0.0  0.0  0.0  0.0  0.1  0.0  0.1  0.0  0.1]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.1  0.1  0.1  0.1  0.1]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.1  0.0  0.0  0.0  0.1]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.1  0.0  0.0  0.0  0.0  0.0  0.1  0.1  0.1  0.1  0.1]
+    [ 0.0  0.0  0.0  0.7  0.7  0.8  0.2  0.0  0.0  0.0  0.1  0.1  0.1  0.1  0.1  0.1  0.1  0.1  0.1  0.1]
+    adds-0
+    [ 1.0  1.0  1.0  1.0  1.0  1.0  0.9  1.0  1.0  0.2  0.9  1.0  0.9  0.7  0.6 -0.0  0.9  0.9  0.8  0.7]
+    [-1.0  1.0 -0.9 -1.0 -1.0 -1.0 -1.0 -0.1 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0]
+    [ 1.0 -1.0 -1.0 -0.8 -0.7 -0.3 -0.9 -1.0 -0.8  0.8 -0.7 -0.6 -0.5  0.8  0.9  0.9 -0.6 -0.2  0.3  0.8]
+    [-0.9  1.0  1.0  1.0  1.0  0.9  0.9  1.0  1.0  0.7  0.9  1.0  0.9  0.8  0.2  0.6  0.9  0.9  0.8  0.8]
+    [ 1.0  0.6  0.6  0.9  0.9  0.9  0.9  0.9  0.8  1.0  1.0  0.9  1.0  1.0  1.0  1.0  0.9  0.9  1.0  1.0]
+    [-1.0 -0.9 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0]
+    [-1.0 -1.0 -1.0 -0.9 -1.0 -0.9 -1.0 -1.0 -1.0  0.7 -0.9 -1.0 -0.9  0.1  0.4  0.8 -0.9 -0.9 -0.5 -0.1]
+    erases-0
+    [ 0.1  0.1  0.1  0.2  0.1  0.2  0.1  0.1  0.1  0.6  0.2  0.2  0.2  0.5  0.5  0.7  0.2  0.2  0.3  0.5]
+    [ 0.1  0.2  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.2  0.6  0.1  0.1  0.1  0.1  0.2  0.3  0.1  0.1  0.1  0.1  0.1  0.1  0.1  0.1  0.1  0.1  0.1  0.1]
+    [ 0.8  0.8  0.1  0.0  0.0  0.0  0.1  0.3  0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.2  0.7  0.0  0.0  0.0  0.0  0.0  0.2  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.1  0.0  0.0  0.0  0.1  0.1  0.2  0.0  0.0  0.0  0.1]
+    [ 0.7  0.0  0.0  0.0  0.0  0.1  0.0  0.0  0.0  0.6  0.1  0.0  0.1  0.5  0.7  0.8  0.1  0.1  0.2  0.4]
+
 ##### Priority Sort
+
+In this task, we feed the model a sequence of bit vectors, each with a real-valued priority that lies in (-1,1) on a separate priority channel.
+The desired output is that sequence of bit vectors, sorted by the scalar priority. 
+
+Here is an example of an NTM sorting a bit vector of length 2:
+
+    inputs:
+    [ 0.0  0.0  1.0  0.0  0.0  0.0]
+    [ 0.0  1.0  1.0  0.0  0.0  0.0]
+    [ 1.0  0.0  1.0  0.0  0.0  0.0]
+    [ 0.0  0.6 -0.8  1.0  0.0  0.0]
+    outputs:
+    [ 0.0  0.0  0.0  0.0  1.0  0.0]
+    [ 0.0  0.0  0.0  0.0  1.0  1.0]
+    [ 0.0  0.0  0.0  0.0  1.0  0.0]
+    reads-0
+    [ 0.2  0.0  0.0  0.2  0.1  0.2]
+    [ 0.2  0.9  0.0  0.0  0.2  0.0]
+    [ 0.2  0.0  0.6  0.6  0.0  0.7]
+    [ 0.2  0.0  0.0  0.0  0.7  0.0]
+    [ 0.2  0.0  0.4  0.2  0.0  0.1]
+    writes-0
+    [ 0.2  0.2  0.2  0.2  0.2  0.2]
+    [ 0.2  0.2  0.2  0.2  0.2  0.2]
+    [ 0.2  0.2  0.2  0.2  0.2  0.2]
+    [ 0.2  0.2  0.2  0.2  0.2  0.2]
+    [ 0.2  0.2  0.2  0.2  0.2  0.2]
+    adds-0
+    [ 0.6 -1.0 -0.6 -0.8 -0.0  1.0]
+    [-0.6 -0.2  1.0 -0.9  0.2 -1.0]
+    [ 0.8 -0.4 -0.9  0.9 -0.5  1.0]
+    [-0.8 -0.0 -1.0 -0.6 -1.0 -0.1]
+    [ 0.1 -0.3  0.7  0.9  0.7 -0.9]
+    [ 0.2  0.5 -0.9  0.9 -0.1 -0.9]
+    [-0.9 -0.8 -0.0 -0.9  0.5 -1.0]
+    erases-0
+    [ 0.2  0.7  1.0  0.5  0.6  0.3]
+    [ 0.6  0.8  0.6  0.8  0.6  0.7]
+    [ 0.1  0.1  0.6  0.1  0.1  0.6]
+    [ 0.1  0.1  0.5  0.1  0.2  0.4]
+    [ 0.2  0.6  0.9  0.1  1.0  0.4]
+    [ 0.7  0.8  0.6  0.8  0.1  0.3]
+    [ 0.4  0.6  0.5  0.4  0.2  0.5]
+    reads-1
+    [ 0.0  0.1  0.1  0.2  0.1  0.2]
+    [ 1.0  0.1  0.1  0.1  0.2  0.2]
+    [ 0.0  0.5  0.5  0.3  0.2  0.2]
+    [ 0.0  0.1  0.1  0.1  0.5  0.2]
+    [ 0.0  0.2  0.2  0.3  0.1  0.2]
+    writes-1
+    [ 0.0  0.0  0.1  0.2  0.3  0.2]
+    [ 0.0  0.2  0.0  0.3  0.2  0.4]
+    [ 0.3  0.0  0.9  0.2  0.1  0.2]
+    [ 0.0  0.8  0.0  0.1  0.2  0.0]
+    [ 0.6  0.0  0.0  0.2  0.2  0.2]
+    adds-1
+    [ 1.0 -1.0 -1.0  1.0 -1.0  1.0]
+    [-1.0  1.0  1.0 -1.0 -1.0 -1.0]
+    [-1.0  1.0 -1.0  1.0 -1.0  1.0]
+    [ 1.0 -1.0  1.0 -1.0 -1.0 -1.0]
+    [-1.0 -1.0  1.0 -1.0  1.0 -1.0]
+    [-1.0 -1.0  1.0 -1.0  1.0 -1.0]
+    [-1.0 -1.0  1.0 -1.0 -1.0 -1.0]
+    erases-1
+    [ 1.0  0.0  1.0  0.0  1.0  0.0]
+    [ 1.0  0.1  1.0  0.0  1.0  1.0]
+    [ 1.0  1.0  0.0  1.0  0.0  0.3]
+    [ 0.0  1.0  1.0  0.0  1.0  1.0]
+    [ 1.0  0.0  1.0  0.0  1.0  1.0]
+    [ 1.0  0.0  1.0  0.0  1.0  1.0]
+    [ 1.0  0.0  1.0  0.0  1.0  1.0]
+
+Note that the NTM correctly sorts the example sequence.
+
+In general, the model will fail to sort properly if the priorities are too close together.
+This supports the hypothsis put forward in the paper, which is that the location of the writes is determined by the priorities, and that at read time the NTM simply linearly traverses the memory.
+
+However, if this were all that was going on, it seems the model ought to converge examples this size using just one head, and I wasn't able to get it to converge on this task without using 2 heads. Moreover, the memory access pattermns above don't exactly align with that interpretation.
+
+If the above hypothesis is true, then there isn't actually a sorting algorithm being performed.
+I suspect that this is because we are forcing the model to spit out a sorted sequence immediately after seeing the original sequence.
+This ought to be impossible to do with total accuracy!
+If instead we let the model wait for some amount of time before putting out the answer, would it do better?
+This raises the question of how to train it to do such a thing?
+Maybe we could force it to wait a fixed amount of time no matter what, or maybe we could let it wait an arbitrary amount of time
+and then only score it when it outputs some sort of score-me bits.
 
 #### Miscellaneous Notes
 
@@ -201,3 +346,5 @@ necessary.
 * The initialization is currently being done wrong. Where multiple inputs feed into an activation, we should be concatenating the weight vectors that generate those inputs before intializing. Fixing this is high on my todo-list, as I expect it's seriously holding back multi-head performance.
 
 * Performance of the code is poor. The focus of this project is on providing a reliable, deterministic reference implementation, so I'm not going to put a huge amount of effort into speeding up this code. That being said, I'm sure some of the stuff I'm doing is clearly (to some people) ridiculous from a performance perspective - please tell me if you see anything like this.
+
+* It seems that starting with shorter sequences and gradually increasing sequence length as training error falls speeds up convergence, but so far it's been my experience that the NTM will converge if you just let it train for long enough.
