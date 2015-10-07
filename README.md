@@ -330,8 +330,7 @@ I suspect that this is because we are forcing the model to spit out a sorted seq
 This ought to be impossible to do with total accuracy!
 If instead we let the model wait for some amount of time before putting out the answer, would it do better?
 This raises the question of how to train it to do such a thing?
-Maybe we could force it to wait a fixed amount of time no matter what, or maybe we could let it wait an arbitrary amount of time
-and then only score it when it outputs some sort of score-me bits.
+Maybe we could force it to wait a fixed amount of time no matter what, or maybe we could let it wait an arbitrary amount of time and then only score it when it outputs some sort of score-me bits.
 
 #### Miscellaneous Notes
 
