@@ -15,7 +15,7 @@ I'd also like to implement some of the stuff from [Learning to Transduce with Un
 
 ### Neural Turing Machine
 
-This is an instance of the model [from this paper](http://arxiv.org/pdf/1410.5401v2.pdf).
+This is an instance of the model from [this paper](http://arxiv.org/pdf/1410.5401v2.pdf).
 The paper was relatively vague about the architecture of the model, so I had to make some stuff up.
 It's likely that some of the stuff I made up is dumb, and I'd appreciate feedback to that effect.
 
@@ -30,9 +30,113 @@ To test a copy model on
 
 #### Tasks
 
+In some cases, a task as described by the paper wasn't completely well-defined.
+In those cases I took some creative liberty - I think that the spirit of the tasks is the same.
+
+##### Copy
+
+In this task, we feed the model a start bit, then some bit vectors, then a stop bit, and ask it to reproduce all the bit vectors in the same order in which it saw them.
+The model performs very well on this task, acheiving negligible error on the training set and generalizing well to sequences longer than those seen during training.
+Below is logging output from a model that was trained on sequences of up to length 5 copying a sequence of length 10.
+Time flows left to right - the memory of this model has 15 locations, each of size 7. It uses only one read head and one write head.
+The 4th row in the input is the channel containing the start bit. The 5th row contains the stop bit. The first 3 rows constitute the bit vectors to be copied.
+
+    inputs:
+    [ 0.0  0.0  1.0  1.0  0.0  0.0  1.0  1.0  1.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  1.0  1.0  0.0  0.0  1.0  1.0  0.0  0.0  1.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  1.0  1.0  0.0  0.0  1.0  1.0  1.0  1.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    outputs:
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  1.0  0.0  0.0  1.0  1.0  1.0  0.0  1.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  1.0  0.0  0.0  1.0  1.0  0.0  0.0  1.0  1.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  1.0  0.0  0.0  1.0  1.0  1.0  1.0  0.0  1.0]
+    reads-0
+    [ 0.0  0.1  0.0  0.0  0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.1  0.1  0.1  0.4  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.1  0.1  0.4  0.2  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.1  0.2  0.2  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.1  0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  0.0  0.0  0.1  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.1  0.0  0.1  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0]
+    [ 0.1  0.1  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0]
+    [ 0.1  0.0  0.0  0.1  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0]
+    [ 0.1  0.0  0.0  0.1  0.0  0.9  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0]
+    [ 0.1  0.0  0.1  0.0  0.7  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0]
+    writes-0
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.3  0.2]
+    [ 0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.4  0.7  0.5]
+    [ 0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.5  0.6  0.0  0.3]
+    [ 0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.9  0.4  0.5  0.0  0.0  0.0]
+    [ 0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.1  0.8  0.0  0.5  0.0  0.0  0.0  0.0]
+    [ 0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.5  0.9  0.0  0.1  0.0  0.0  0.0  0.0  0.0]
+    [ 1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.5  0.0  0.1  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    adds-0
+    [-1.0  0.5  0.9 -0.8 -1.0  0.5  0.9  0.1  0.1  0.1  0.9 -1.0  0.4  0.1  0.1  0.0  0.4  0.1  1.0  1.0  1.0  0.1]
+    [-0.9 -1.0 -0.9  1.0  0.9 -1.0 -0.9 -1.0 -1.0  1.0 -0.9 -1.0  1.0  1.0 -1.0  0.2  1.0  1.0  1.0  1.0  1.0  1.0]
+    [-1.0  1.0  1.0  1.0  1.0  1.0  1.0  1.0  1.0  1.0  1.0  1.0  1.0 -1.0 -0.8  1.0  1.0 -1.0 -1.0 -1.0  1.0 -1.0]
+    [ 1.0 -0.8  1.0  1.0 -0.7 -0.9  1.0  1.0  1.0 -0.9  1.0  1.0 -1.0 -1.0 -1.0  1.0 -1.0 -1.0 -1.0 -1.0 -0.5 -1.0]
+    [-1.0 -1.0 -1.0  0.6  0.8 -1.0 -1.0 -1.0 -1.0  0.9 -1.0  1.0  1.0  1.0 -0.7 -1.0  1.0  1.0  1.0  1.0  1.0  1.0]
+    [-1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0  1.0  0.9 -1.0 -1.0  1.0  1.0  1.0 -1.0  1.0]
+    [ 1.0  1.0  1.0 -0.7 -0.8  1.0  1.0 -0.9 -0.9  1.0  1.0  1.0 -1.0 -1.0 -0.1  1.0 -1.0 -1.0 -0.4 -0.3 -1.0 -1.0]
+    erases-0
+    [ 1.0  1.0  1.0  1.0  0.9  1.0  1.0  1.0  1.0  1.0  1.0  1.0  0.0  0.0  0.8  1.0  0.0  0.0  0.0  0.0  0.1  0.0]
+    [ 1.0  0.9  0.9  0.1  0.5  0.9  0.9  0.9  0.9  0.3  0.9  0.9  0.0  0.0  0.5  0.9  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.7  0.9  0.9  0.0  0.0  0.9  0.9  0.1  0.1  0.8  0.9]
+    [ 1.0  1.0  1.0  0.6  0.8  1.0  1.0  0.9  0.9  0.9  1.0  0.6  0.1  0.0  0.1  0.9  0.1  0.0  0.0  0.1  0.1  0.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.5  1.0  0.0  0.0  0.5  1.0  0.2  0.2  0.0  1.0]
+    [ 0.0  1.0  1.0  0.7  0.1  1.0  1.0  1.0  1.0  1.0  1.0  0.0  0.6  0.0  0.4  1.0  0.6  0.0  0.4  0.5  1.0  0.0]
+    [ 0.5  0.0  0.0  0.3  0.1  0.0  0.0  0.0  0.0  0.0  0.0  0.4  0.8  0.9  0.0  0.0  0.8  0.9  0.1  0.1  0.8  0.9]
+
+There are a few cool things to note about this example.
+The first cool thing is that the error is so low. 
+I've rounded the numbers to 1 digit after the decimal, but the actual BPC for this sequence was less than 2e-8.
+This is especially interesting because we never trained the model on sequences of this length.
+In fact, this particular model will perform well up to length 13, after which it starts running into trouble.
+My best guess is that the NTM needs a few extra rows of memory for some reason, but I don't feel very strongly about that hypothesis.
+
+The second cool thing is the memory access pattern.
+The NTM starts writing the bit vectors at memory location 6 (counting from 1), and shifts backwards by one location every time step until it sees the stop bit.
+
+Once the stop bit is read, the NTM then starts reading from the corresponding locations, after (presumably), doing a content-based shift back to the beginning of the sequence in memory.
+
+Note that read and write shifts just wrap around - the memory is treated as circular.
+
+A few things are still unclear:
+How are the bit vectors mapped into memory adds and back again?
+How does the NTM know whether it should be reading or writing at the current time?
+How exactly is the shift back to the start of the relevant memory region performed by the read head after seeing the stop bit?
+
+I have some ideas about this that I plan to address elsewhere.
+
+##### Repeat Copy
+
+This task is the same as the copy task, but instead of a stop bit, the model sees a scalar, which represents the number of copies to be made.
+After the required number of copies is made, the model is also supposed to output a stop bit on a separate channel.
+
+Here is the logging output of a small example model:
+
+##### Associative Recall
+
+##### Dynamic n-Grams
+
+##### Priority Sort
+
 #### Miscellaneous Notes
 
-* The controller is just a single FF layer with a tanh activation. All heads take input straight from the output of the controller layer.
+* The controller is just a single FF layer with a tanh activation. All heads take input straight from the output of the controller layer. I couple the number of read heads and write heads. If you pass --heads=8 to the model, there will be 8 read and 8 write heads. As alluded to in the paper, the order of the reads/writes doesn't matter.
 
 * Restricting the range of allowed integer shifts to [-1,0,1] seems totally essential for length-generalization in the copy task. It's possible that this restriction (which currently I've hardcoded into the model), is harming performance on some of the other tasks.
 
@@ -42,4 +146,4 @@ To test a copy model on
 
 * The initialization is currently being done wrong. Where multiple inputs feed into an activation, we should be concatenating the weight vectors that generate those inputs before intializing. Fixing this is high on my todo-list, as I expect it's seriously holding back multi-head performance.
 
-* Performance of the code is poor, and this is mostly my fault. The focus of this project is on providing a reliable, deterministic reference implementation, so I'm not going to put a huge amount of effort into speeding up this code. That being said, I'm sure some of the stuff I'm doing is clearly (to some people), ridiculous from a performance perspective - please tell me if you see anything like this.
+* Performance of the code is poor. The focus of this project is on providing a reliable, deterministic reference implementation, so I'm not going to put a huge amount of effort into speeding up this code. That being said, I'm sure some of the stuff I'm doing is clearly (to some people) ridiculous from a performance perspective - please tell me if you see anything like this.
