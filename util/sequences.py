@@ -136,11 +136,11 @@ def associative_recall(seq_len, vec_size, item_size):
   then a final fetch bit
   then we expect item_size vectors to be reproduced
 
-  so our total length is (seq_len+1)*(item_size+1) + 1 + seq_len
+  so our total length is (seq_len+1)*(item_size+1) + 1 + item_size
   """
   input_size  = vec_size + 2
   output_size = vec_size
-  length  = (seq_len+1)*(item_size+1) + 1 + seq_len
+  length  = (seq_len+1)*(item_size+1) + 1 + item_size
   inputs  = np.zeros((length,input_size),dtype=np.float32)
   outputs = np.zeros((length,output_size),dtype=np.float32)
 

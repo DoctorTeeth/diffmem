@@ -183,12 +183,14 @@ If the model had 2 heads of each type, it could theoretically store a more accur
 necessary.
 
 ##### Associative Recall
+In this task, we feed the model groups of bit vectors delimited by start bits, then a query vector delimited by end bits.
+The goal is for the model to output the vector that it saw after the query vector.
 
-Doesn't seem necessary to use multiple heads?
+
 
 ##### Dynamic n-Grams
 
-In this example, we fix a natural number n and then generate a probability table that encodes the likelihood that the next bit in a sequence will be a 1, having observed the last n-1 bits. We generate a new table for each training sequence, and train the model to predict the next bit at all times.
+In this task, we fix a natural number n and then generate a probability table that encodes the likelihood that the next bit in a sequence will be a 1, having observed the last n-1 bits. We generate a new table for each training sequence, and train the model to predict the next bit at all times.
 
 It's hard to generate an engaging visualization of this task, but if you look at the following it's possible you can get a sense of what's going on.
 
