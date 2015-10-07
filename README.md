@@ -125,8 +125,62 @@ I have some ideas about this that I plan to address elsewhere.
 
 This task is the same as the copy task, but instead of a stop bit, the model sees a scalar, which represents the number of copies to be made.
 After the required number of copies is made, the model is also supposed to output a stop bit on a separate channel.
+I don't normalize the repeat-scalar, though it's normalized in the paper.
+I expect that this is seriously hurting generalization performance and fixing it is on my todo-list.
 
 Here is the logging output of a small example model:
+
+    inputs:
+    [ 0.0  0.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  1.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  1.0  1.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 1.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+    [ 0.0  0.0  0.0  2.0  0.0  0.0  0.0  0.0  0.0]
+    outputs:
+    [ 0.0  0.0  0.0  0.0  0.0  1.0  0.0  1.0  0.0]
+    [ 0.0  0.0  0.0  0.0  1.0  1.0  1.0  1.0  0.0]
+    [ 0.0  0.0  0.0  0.0  1.0  1.0  1.0  1.0  0.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  1.0]
+    reads-0
+    [ 0.2  0.0  0.0  0.0  0.0  0.2  0.0  0.2  0.1]
+    [ 0.1  0.1  0.0  0.0  0.0  0.0  0.0  0.1  0.2]
+    [ 0.3  0.6  1.0  0.0  0.0  0.1  0.0  0.3  0.2]
+    [ 0.2  0.2  0.0  1.0  0.0  0.7  0.0  0.5  0.2]
+    [ 0.1  0.0  0.0  0.0  1.0  0.0  0.9  0.0  0.3]
+    writes-0
+    [ 0.0  0.0  0.1  0.4  0.1  0.2  0.1  0.1  0.1]
+    [ 0.0  0.0  0.0  0.3  0.4  0.3  0.2  0.2  0.1]
+    [ 0.0  0.0  0.0  0.0  0.3  0.3  0.3  0.2  0.4]
+    [ 0.9  0.6  0.0  0.2  0.0  0.1  0.3  0.3  0.1]
+    [ 0.1  0.4  0.9  0.1  0.2  0.1  0.1  0.2  0.3]
+    adds-0
+    [ 1.0  1.0  0.8  1.0 -1.0 -1.0 -1.0 -1.0 -1.0]
+    [-1.0 -1.0 -1.0 -1.0  1.0  1.0  1.0  1.0 -0.4]
+    [-1.0 -1.0  0.9  0.5 -0.9  0.2 -1.0  0.3 -0.9]
+    [ 1.0  0.9  1.0  1.0  1.0  1.0  1.0  0.7 -1.0]
+    [-1.0  0.9  1.0  1.0  1.0  1.0  0.8  1.0 -1.0]
+    [-1.0  1.0  1.0 -1.0 -1.0  0.8 -1.0  1.0  1.0]
+    [ 1.0 -1.0 -0.3  1.0  1.0  0.2  1.0  0.3  0.6]
+    erases-0
+    [ 0.6  0.2  0.8  0.5  0.9  0.2  0.9  0.2  0.5]
+    [ 0.6  0.1  0.1  0.1  0.6  0.7  0.5  0.6  0.5]
+    [ 0.5  0.9  1.0  0.0  1.0  0.6  1.0  0.9  1.0]
+    [ 0.3  1.0  1.0  0.0  1.0  0.9  1.0  1.0  1.0]
+    [ 1.0  1.0  1.0  0.0  1.0  0.6  1.0  0.6  1.0]
+    [ 0.0  0.0  0.0  0.0  0.0  0.7  0.0  1.0  0.0]
+    [ 0.7  0.9  1.0  0.9  0.9  0.6  0.9  0.6  0.9]
+
+Again, note the memory access patterns.
+They're not as clean as in the simple copy example (I'm trying to figure out exactly why), but it's still relatively clear what's going on:
+The NTM writes the first bit vector to the 4th region of memory, then writes the second bit vector to the 5th region.
+Then, once the repeat scalar is seen, the NTM reads out locations 4,5,4 and then 5, after which it does whatever, since it will now ignore the read values.
+It outputs a stop bit in the correct location.
+
+One thing that's a little unclear is how the model is keeping track of how many copies have been performed so far and how many of them are left to perform.
+I expect that some more careful study of the state of the memory will yield a satisfying answer to this question.
+It seems likely that the model is being forced to keep track of this in a suboptimal way, since it has limited memory and only one head of each type.
+If the model had 2 heads of each type, it could theoretically store a more accurate copy counter at a different location in memory and attend to that separately as
+necessary.
 
 ##### Associative Recall
 
