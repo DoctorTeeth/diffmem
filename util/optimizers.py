@@ -1,5 +1,4 @@
 import autograd.numpy as np
-import pdb
 
 def l2(x):
   return np.sqrt(np.sum(np.multiply(x,x)))
