@@ -26,7 +26,7 @@ All 5 of the tasks from the paper are implemented. There's more detail in the be
 The script `run_model.py` handles both training and testing.
 Execute `./run_model.py --help` to get a list of arguments and their descriptions.
 The saved_models directory contains pickled models for every task - at present, only some of them are good.
-To test a copy model on 
+To test the saved copy model on sequence of length 10, do `./run_model.py --model=saved_models/copy.pkl --lo=10 --hi=10`.
 
 #### Tasks
 
@@ -410,3 +410,5 @@ Maybe we could force it to wait a fixed amount of time no matter what, or maybe 
 * Performance of the code is poor. The focus of this project is on providing a reliable, deterministic reference implementation, so I'm not going to put a huge amount of effort into speeding up this code. That being said, I'm sure some of the stuff I'm doing is clearly (to some people) ridiculous from a performance perspective - please tell me if you see anything like this.
 
 * It seems that starting with shorter sequences and gradually increasing sequence length as training error falls speeds up convergence, but so far it's been my experience that the NTM will converge if you just let it train for long enough.
+
+* You might see negative BPC because of the way I clip the loss to avoid log(0).
