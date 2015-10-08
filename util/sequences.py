@@ -179,16 +179,16 @@ def priority_sort(seq_len, vec_size):
   so the total length is 1 bit for start bit, 1 for stop, then
   2x the seq_len
   """
-  input_size  = vec_size + 1
+  input_size  = vec_size + 3
   output_size = vec_size
   length  = 2*seq_len + 2
   inputs  = np.zeros((length,input_size),dtype=np.float32)
   outputs = np.zeros((length,output_size),dtype=np.float32)
 
   start_bit = np.zeros((1,input_size))
-  start_bit[0,-2] = 1
+  start_bit[0,-3] = 1
   stop_bit = np.zeros((1,input_size))
-  stop_bit[0,-1] = 1
+  stop_bit[0,-2] = 1
 
   inputs[0] = start_bit
   inputs[seq_len + 1] = stop_bit
@@ -199,7 +199,7 @@ def priority_sort(seq_len, vec_size):
     seq = np.random.randint(2, size=(1, vec_size))
     priority = np.random.uniform(low=-1, high=1)
     items.append((seq, priority))
-    inputs[i+1,:-1] = seq
+    inputs[i+1,:-3] = seq
     inputs[i+1,-1] = priority
 
   items.sort(key=lambda x: x[1])
@@ -275,7 +275,7 @@ class SequenceGen(object):
       self.make = make
     elif sequenceType == 'priority_sort':
       self.out_size = vec_size
-      self.in_size  = vec_size + 1
+      self.in_size  = vec_size + 3
       def make():
         seq_len = np.random.randint(lo, hi + 1)
         return priority_sort(seq_len, vec_size)
