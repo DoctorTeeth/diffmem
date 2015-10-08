@@ -19,14 +19,14 @@ This is an instance of the model from [this paper](http://arxiv.org/pdf/1410.540
 The paper was relatively vague about the architecture of the model, so I had to make some stuff up.
 It's likely that some of the stuff I made up is dumb, and I'd appreciate feedback to that effect.
 
-All 5 of the tasks from the paper are implemented. There's more detail in the below sections about performance on individual tasks, but broadly speaking the model seems to be working; it generalizes to sequences longer than those it was trained on (e.g. it learns "compact internal programs")
+All 5 of the tasks from the paper are implemented. There's more detail in the below sections about performance on individual tasks, but broadly speaking the model seems to be working; it generalizes to sequences longer than those it was trained on (i.e. it learns "compact internal programs").
 
 #### Usage
 
 The script `run_model.py` handles both training and testing.
 Execute `./run_model.py --help` to get a list of arguments and their descriptions.
 The saved_models directory contains pickled models for every task - at present, only some of them are good.
-To test the saved copy model on sequence of length 10, do `./run_model.py --model=saved_models/copy.pkl --lo=10 --hi=10`.
+To test the saved copy model on sequences of length 10, do `./run_model.py --model=saved_models/copy.pkl --lo=10 --hi=10`.
 
 #### Tasks
 
@@ -114,19 +114,12 @@ Once the stop bit is read, the NTM then starts reading from the corresponding lo
 
 Note that read and write shifts just wrap around - the memory is treated as circular.
 
-A few things are still unclear:
-How are the bit vectors mapped into memory adds and back again?
-How does the NTM know whether it should be reading or writing at the current time?
-How exactly is the shift back to the start of the relevant memory region performed by the read head after seeing the stop bit?
-
-I have some ideas about this that I plan to address elsewhere.
-
 ##### Repeat Copy
 
 This task is the same as the copy task, but instead of a stop bit, the model sees a scalar, which represents the number of copies to be made.
 After the required number of copies is made, the model is also supposed to output a stop bit on a separate channel.
 I don't normalize the repeat-scalar, though it's normalized in the paper.
-I expect that this is seriously hurting generalization performance and fixing it is on my todo-list.
+I expect that this is seriously hurting generalization performance; fixing it is on my todo-list.
 
 Here is the logging output of a small example model:
 
@@ -176,15 +169,9 @@ The NTM writes the first bit vector to the 4th region of memory, then writes the
 Then, once the repeat scalar is seen, the NTM reads out locations 4,5,4 and then 5, after which it does whatever, since it will now ignore the read values.
 It outputs a stop bit in the correct location.
 
-One thing that's a little unclear is how the model is keeping track of how many copies have been performed so far and how many of them are left to perform.
-I expect that some more careful study of the state of the memory will yield a satisfying answer to this question.
-It seems likely that the model is being forced to keep track of this in a suboptimal way, since it has limited memory and only one head of each type.
-If the model had 2 heads of each type, it could theoretically store a more accurate copy counter at a different location in memory and attend to that separately as
-necessary.
-
 ##### Associative Recall
 In this task, we feed the model groups of bit vectors delimited by start bits, then a query vector delimited by end bits.
-The goal is for the model to output the vector that it saw after the query vector.
+The goal is for the model to output the vector that it saw immedieatley following the query vector.
 
     inputs:
     [ 0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0]
@@ -248,7 +235,6 @@ The goal is for the model to output the vector that it saw after the query vecto
 In the above sequence, the key could have been 0,0,1 or 0,0,0.
 It was 0,0,1 (8th time step), and so the model outputs (or mostly outputs, in this case), the item it saw after that, which was 0,0,0.
 
-
 ##### Dynamic n-Grams
 
 In this task, we fix a natural number n and then generate a probability table that encodes the likelihood that the next bit in a sequence will be a 1, having observed the last n-1 bits. We generate a new table for each training sequence, and train the model to predict the next bit at all times.
@@ -310,10 +296,12 @@ It's hard to generate an engaging visualization of this task, but if you look at
 
 ##### Priority Sort
 
-In this task, we feed the model a sequence of bit vectors, each with a real-valued priority that lies in (-1,1) on a separate priority channel.
+In this task, we feed the model a sequence of bit vectors, each with a real-valued priority that lies in (-1,1), which comes on a separate priority channel.
 The desired output is that sequence of bit vectors, sorted by the scalar priority. 
 
-Here is an example of an NTM sorting a bit vector of length 2:
+Here is an example of an NTM sorting a bit vector of length 2.
+The first 3 rows represent the bit vectors to be sorted, and the last row represents the scalar priority.
+You can see in the first and 4th columns that the start and stop bits don't have their own channels - this is just a bug and I plan to fix it.
 
     inputs:
     [ 0.0  0.0  1.0  0.0  0.0  0.0]
@@ -388,16 +376,9 @@ This supports the hypothsis put forward in the paper, which is that the location
 
 However, if this were all that was going on, it seems the model ought to converge examples this size using just one head, and I wasn't able to get it to converge on this task without using 2 heads. Moreover, the memory access pattermns above don't exactly align with that interpretation.
 
-If the above hypothesis is true, then there isn't actually a sorting algorithm being performed.
-I suspect that this is because we are forcing the model to spit out a sorted sequence immediately after seeing the original sequence.
-This ought to be impossible to do with total accuracy!
-If instead we let the model wait for some amount of time before putting out the answer, would it do better?
-This raises the question of how to train it to do such a thing?
-Maybe we could force it to wait a fixed amount of time no matter what, or maybe we could let it wait an arbitrary amount of time and then only score it when it outputs some sort of score-me bits.
-
 #### Miscellaneous Notes
 
-* The controller is just a single FF layer with a tanh activation. All heads take input straight from the output of the controller layer. I couple the number of read heads and write heads. If you pass --heads=8 to the model, there will be 8 read and 8 write heads. As alluded to in the paper, the order of the reads/writes doesn't matter.
+* The controller is just a single FF layer with a tanh activation. All heads take input straight from the output of the controller layer. I couple the number of read heads and write heads. If you pass --heads=8 to the model, there will be 8 read and 8 write heads. As mentioned in the paper, the order of the reads/writes doesn't matter.
 
 * Restricting the range of allowed integer shifts to [-1,0,1] seems totally essential for length-generalization in the copy task. It's possible that this restriction (which currently I've hardcoded into the model), is harming performance on some of the other tasks.
 
