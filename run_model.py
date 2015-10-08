@@ -9,6 +9,7 @@ from util.util import gradCheck, serialize, deserialize, visualize
 import os
 import warnings
 import time
+import pdb
 
 # Comment next line to remove determinism
 np.random.seed(0)
@@ -36,6 +37,8 @@ parser.add_argument("--heads", help="number of (pairs of) read and write heads",
                     default=1, type=int)
 parser.add_argument("--units", help="number of hidden units",
                     default=100, type=int)
+parser.add_argument("--lr_rate", help="maybe halve learning rate at this interval",
+                    default=None, type=int)
 parser.add_argument("--serialize_freq", help="serialize every <this many sequences>",
                     default=100, type=int)
 parser.add_argument("--log_freq", help="how often to log diagnostic information",
@@ -50,10 +53,17 @@ args = parser.parse_args()
 
 # create directory for serializations if necessary
 if args.serialize_to is not None:
+  print "Serializing to:", args.serialize_to
   try:
     os.mkdir(args.serialize_to)
   except OSError:
     pass
+
+# if we use lr schedule, we need to keep track of errors over time
+if args.lr_rate is not None:
+  print "Using lr schedule rate of:", args.lr_rate
+  errors = {}
+  error_sum = 0
 
 # deserialize saved model if path given
 if args.model is None:
@@ -67,6 +77,7 @@ if args.model is None:
   model = NTM(seq.in_size, seq.out_size, hidden_size, N, M, vec_size, heads)
 else:
   # otherwise, load the model from specified file
+  print "Using saved model:", args.model
   model = deserialize(args.model)
   vec_size = model.vec_size # vec size comes from model
   seq = SequenceGen(args.task, vec_size, args.hi, args.lo)
@@ -117,6 +128,18 @@ while True:
     print "PASS DIFF CHECK?: ", check
 
   if not args.test_mode:
+    # optionally halve the learning rate if error has not gone down
+    if args.lr_rate is not None:
+      error_sum += newbpc
+      if n % args.lr_rate == 0:
+        errors[n] = error_sum
+        error_sum = 0
+        if n > args.lr_rate: # don't do this for the first "epoch"
+          if errors[n] > errors[n - args.lr_rate]:
+            print "halving learning rate!"
+            optimizer.lr /= 2
+            print "learning rate is now:", optimizer.lr 
+
     optimizer.update_weights(model.W, deltas)
 
   n += 1
