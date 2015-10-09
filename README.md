@@ -25,7 +25,7 @@ All 5 of the tasks from the paper are implemented. There's more detail in the be
 
 The script `run_model.py` handles both training and testing.
 Execute `./run_model.py --help` to get a list of arguments and their descriptions.
-The saved_models directory contains pickled models for every task - at present, only some of them are good.
+The saved_models directory contains pickled models for every task.
 To test the saved copy model on sequences of length 10, do `./run_model.py --model=saved_models/copy.pkl --lo=10 --hi=10`.
 
 #### Tasks
@@ -171,7 +171,7 @@ It outputs a stop bit in the correct location.
 
 ##### Associative Recall
 In this task, we feed the model groups of bit vectors delimited by start bits, then a query vector delimited by end bits.
-The goal is for the model to output the vector that it saw immedieatley following the query vector.
+The goal is for the model to output the vector that it saw immediateley following the query vector.
 
     inputs:
     [ 0.0  0.0  0.0  0.0  0.0  1.0  0.0  0.0  0.0  0.0]
