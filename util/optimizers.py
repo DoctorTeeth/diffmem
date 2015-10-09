@@ -5,7 +5,7 @@ def l2(x):
 
 class RMSProp(object):
 
-  def __init__(self, W, learning_rate=10e-4, decay=0.95, blend=0.95):
+  def __init__(self, W, learning_rate=10e-5, decay=0.95, blend=0.95):
     """
     learning rate governs how much we use the computed grad
     decay governs how quickly accumulated momentum drops off
