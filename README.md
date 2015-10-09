@@ -416,7 +416,7 @@ Note that the NTM correctly sorts the example sequence.
 In general, the model will fail to sort properly if the priorities are too close together.
 This supports the hypothsis put forward in the paper, which is that the location of the writes is determined by the priorities, and that at read time the NTM simply linearly traverses the memory.
 
-However, if this were all that was going on, it seems the model ought to converge examples this size using just one head, and I wasn't able to get it to converge on this task without using 2 heads. Moreover, the memory access pattermns above don't exactly align with that interpretation.
+However, if this were all that was going on, it seems the model ought to converge examples this size using just one head, and I wasn't able to get it to converge on this task without using 2 heads. Moreover, the memory access patterns above don't exactly align with that interpretation.
 
 #### Miscellaneous Notes
 
