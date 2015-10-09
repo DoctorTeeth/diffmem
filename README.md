@@ -428,7 +428,7 @@ However, if this were all that was going on, it seems the model ought to converg
 
 * The initial state of the memory and the initial state of the last read, the last write weight, and the last read weight are actually learnable parameters of the model, randomly intialized as are the rest of the weights. This modification greatly improved training performance.
 
-* The initialization is currently being done wrong. Where multiple inputs feed into an activation, we should be concatenating the weight vectors that generate those inputs before intializing. Fixing this is high on my todo-list, as I expect it's seriously holding back multi-head performance.
+* The initialization is currently suboptimal. Where multiple inputs feed into an activation, we should be concatenating the weight vectors that generate those inputs before intializing. Fixing this is high on my todo-list, as I expect it's seriously holding back multi-head performance.
 
 * Performance of the code is poor. The focus of this project is on providing a reliable, deterministic reference implementation, so I'm not going to put a huge amount of effort into speeding up this code. That being said, I'm sure some of the stuff I'm doing is clearly (to some people) ridiculous from a performance perspective - please tell me if you see anything like this.
 
