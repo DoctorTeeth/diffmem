@@ -11,6 +11,10 @@ def l2(x):
 
 class RMSProp(object):
 
+  """
+  This class stores RMSProp state and generates RMSProp updates.
+  """
+
   def __init__(self, W, learning_rate=10e-5, decay=0.95, blend=0.95):
     """
     This is the Alex Graves RMSProp variant from
@@ -39,6 +43,12 @@ class RMSProp(object):
       self.qs[k]  = self.lr
 
   def update_weights(self, params, dparams):
+    """
+    params: the parameters of the model as they currently exist.
+    dparams: the grad of the cost w.r.t. the parameters of the model.
+
+    We update params based on dparams.
+    """
     for k in params.keys():
       p = params[k]
       d = dparams[k]

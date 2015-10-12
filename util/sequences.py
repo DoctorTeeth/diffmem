@@ -3,7 +3,6 @@ Generate random instances for each of the 5 tasks from the paper.
 """
 import autograd.numpy as np
 import itertools
-import pdb
 
 def ngram_table(bits):
   """
@@ -77,7 +76,7 @@ def easy_copy(seq_len, vec_size):
   bit is always on, so that the NTM doesn't have to remember whether it needs to
   be reading or writing. Thus, this task is strictly easier than the copy task.
   """
-  inputs, outputs = copy_sequence(seq_len, vec_size)
+  inputs, outputs, _ = copy_sequence(seq_len, vec_size)
   inputs[1:seq_len,-2] = 1
   inputs[seq_len+2:-1,-1] = 1
   return inputs, outputs, seq_len
@@ -165,10 +164,10 @@ def associative_recall(seq_len, vec_size, item_size):
     a = i*(item_size+1)
     b = a + item_size
     inputs[a] = start_bit
-    inputs[a+1:b+1,:-2] = items[i] 
+    inputs[a+1:b+1,:-2] = items[i]
 
   # pick an item at random that isn't the last item
-  idx = np.random.randint(low=0, high=len(items) - 1) 
+  idx = np.random.randint(low=0, high=len(items) - 1)
   fetch_item = items[idx]
 
   inputs[b+1] = fetch_bit
@@ -247,9 +246,10 @@ def ngrams(seq_len, n):
   return inputs, outputs, seq_len
 
 class SequenceGen(object):
-
-  # A nasty convenience function that should be excised
-  # in favor of making all above tasks inherit from base class.
+  """
+  A nasty convenience function that should be removed
+  in favor of making all above tasks inherit from base class.
+  """
   def __init__(self, sequenceType, vec_size, hi, lo):
     if sequenceType == 'copy':
       self.out_size = vec_size

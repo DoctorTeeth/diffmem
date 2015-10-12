@@ -6,7 +6,6 @@ visualization and a bit of code for dealing with Autograd nodes.
 """
 import autograd.numpy as np
 import pickle
-import pdb
 
 def gradCheck(model, deltas, inputs, targets, epsilon, tolerance):
   """
@@ -45,7 +44,7 @@ def getDiffs(model, deltas, inputs, targets, epsilon):
   for D in deltas:
     diff_tensors.append(np.zeros_like(D))
 
-  for W,D,N,diffs in zip(model.weights, deltas, model.names, diff_tensors):
+  for W,D,diffs in zip(model.weights, deltas, diff_tensors):
   # for each weight tensor in our model
 
     for i in range(W.shape[0]):
@@ -54,12 +53,12 @@ def getDiffs(model, deltas, inputs, targets, epsilon):
 
         # compute f(x+h) for that weight
         W[i,j] += epsilon
-        loss, ds, os, _, _, _, _  = model.lossFun(inputs, targets, False)
+        loss, _, _, _, _, _, _  = model.lossFun(inputs, targets, False)
         loss_plus = np.sum(loss)
 
         # compute f(x - h) for that weight
         W[i,j] -= epsilon*2
-        loss, ds, os, _, _, _, _ = model.lossFun(inputs, targets, False)
+        loss, _, _, _, _, _, _ = model.lossFun(inputs, targets, False)
         loss_minus = np.sum(loss)
 
         # grad check must leave weights unchanged
@@ -67,10 +66,10 @@ def getDiffs(model, deltas, inputs, targets, epsilon):
         W[i,j] += epsilon
 
         # compute the numerical grad w.r.t. this param
-        grad = (loss_plus - loss_minus) / (2 * epsilon) 
-        diffs[i,j] = grad - D[i,j] 
+        grad = (loss_plus - loss_minus) / (2 * epsilon)
+        diffs[i,j] = grad - D[i,j]
 
-  return diff_tensors 
+  return diff_tensors
 
 def rando(out_size,in_size):
   """
@@ -80,14 +79,26 @@ def rando(out_size,in_size):
   return np.random.uniform(-sigma, sigma, (out_size, in_size))
 
 def sigmoid(ys):
+  """
+  Basic sigmoid nonlinearity.
+  Used when output must lie in (0,1)
+  """
   return 1 / (1 + np.exp(-ys))
 
 def softmax(xs):
+  """
+  Initialization of weight tensors.
+  Used when outputs must sum to 1.
+  """
   n = np.exp(xs)
   d = np.sum(np.exp(xs))
   return n/d
 
 def softplus(xs):
+  """
+  Softplus nonlinearity.
+  Used for the beta values.
+  """
   return np.log(1 + np.exp(xs))
 
 def serialize(filename, data):
