@@ -44,6 +44,7 @@ The script `run_model.py` handles both training and testing.
 Execute `./run_model.py --help` to get a list of arguments and their descriptions.
 The saved_models directory contains pickled models for every task.
 To test the saved copy model on sequences of length 10, do `./run_model.py --model=saved_models/copy.pkl --lo=10 --hi=10`.
+Serialized models include information about about which input size and output size and number of hidden units etc were used, so you don't need to remember that.
 
 #### Tasks
 
