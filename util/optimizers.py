@@ -1,6 +1,12 @@
+"""
+This module implements gradient-based optimizers.
+"""
 import autograd.numpy as np
 
 def l2(x):
+  """
+  Hacky l2-norm computation to be used for tracking update magnitude.
+  """
   return np.sqrt(np.sum(np.multiply(x, x)))
 
 class RMSProp(object):

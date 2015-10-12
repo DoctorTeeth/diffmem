@@ -1,5 +1,5 @@
 """
-NTM with feed-forward controller, using autodiff
+NTM with a single-layer feed-forward controller, using autodiff
 """
 import autograd.numpy as np
 from autograd import grad
