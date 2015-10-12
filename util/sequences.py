@@ -1,6 +1,5 @@
 """
-Generate random instances of various artificial tasks.
-Right now, only a bit-vector copy task is implemented.
+Generate random instances for each of the 5 tasks from the paper.
 """
 import autograd.numpy as np
 import itertools
@@ -9,7 +8,7 @@ import pdb
 def ngram_table(bits):
   """
   Generate a table that contains the probability of seeing a 1
-  after having seen a context of length bits-1
+  after having seen a context of length bits-1.
   """
   assert(bits >= 2)
   prod = itertools.product([0,1], repeat=bits-1)
@@ -21,7 +20,7 @@ def ngram_table(bits):
 
 def sample_ngram(table, context, n):
   """
-  given an n-gram table and the current context, generate the next bit
+  Given an n-gram table and the current context, generate the next bit.
   """
   p = table[tuple(context.reshape(1,n-1).tolist()[0])]
   r = np.random.uniform(low=0, high=1)
@@ -32,12 +31,15 @@ def sample_ngram(table, context, n):
 
 def copy_sequence(seq_len, vec_size):
   """
+  Implements the copy task - section 4.1 from the paper.
+
   Returns inputs, outputs
-  where inputs is a length 2 * seq_len + 2 sequence of vec_size + 2 vecs
-  and outputs is a length 2 * seq_len + 2 sequence of vec_size vecs
-  inputs starts with a start bit, then the seq to be copied, then and end bit, then 0s
+    where inputs is a length 2 * seq_len + 2 sequence of vec_size + 2 vecs
+    and outputs is a length 2 * seq_len + 2 sequence of vec_size vecs
+
+  Inputs starts with a start bit, then the seq to be copied, then and end bit, then 0s.
   outputs is 0s until after inputs has the end bit, then it's the first sequence, but without
-  the extra bits
+  the extra channels for start and stop bits.
   """
   input_size = vec_size + 2
   length  = seq_len * 2 + 2
@@ -82,13 +84,14 @@ def easy_copy(seq_len, vec_size):
 
 def repeat_copy(seq_len, vec_size, repeats):
   """
+  Implements the repeat copy task - section 4.2 from the paper.
+
   Returns inputs, outputs
 
   Inputs consists of a sequence of length seq-length,
-  followed by a scalar repeat count in another channel.
+  followed by a scalar repeat count C in another channel.
 
-  After the input sequence, we get a scalar on the scalar channel,
-  and we need to copy the sequence that number of times and emit the end marker.
+  The task is to copy the sequence C times and emit the end marker.
   """
   r = repeats
   input_size  = vec_size + 2
@@ -129,14 +132,20 @@ def repeat_copy(seq_len, vec_size, repeats):
 
 def associative_recall(seq_len, vec_size, item_size):
   """
-  We show between 2 and 6 items (seq len), each of which is 3 six bit binary vectors
-  For i in range(seq_len):
-    show a start bit, then item_size vectors
-  then show a fetch bit, then item_size vectors
-  then a final fetch bit
-  then we expect item_size vectors to be reproduced
+  Implements the associative recall task - section 4.3 from the paper.
 
-  so our total length is (seq_len+1)*(item_size+1) + 1 + item_size
+  We show between seq_len items, each of which is
+  item_size vec_size-bit binary vectors.
+
+  Each item is preceded by a start bit.
+
+  After all the items are shown, a fetch bit is shown.
+  Then a randomly chosen item already seen is shown again.
+  Then a final fetch bit.
+
+  After the final fetch bit has been seen, the task is to
+  reproduce the item that was seen after the item between
+  fetch bits.
   """
   input_size  = vec_size + 2
   output_size = vec_size
@@ -173,11 +182,13 @@ def associative_recall(seq_len, vec_size, item_size):
 
 def priority_sort(seq_len, vec_size):
   """
+  Implements the priority sort task - section 4.5 from the paper.
+
   We show seq_len vectors of vec_size,
-  each with a scalar priority between -1 and 1
-  the expected output then is the sorted sequence of vectors
-  so the total length is 1 bit for start bit, 1 for stop, then
-  2x the seq_len
+  each with a scalar priority between -1 and 1.
+
+  The expected output then is the sorted sequence of vectors,
+  from smallest priority to largest.
   """
   input_size  = vec_size + 3
   output_size = vec_size
@@ -213,25 +224,14 @@ def priority_sort(seq_len, vec_size):
 
 def ngrams(seq_len, n):
   """
-  this is the dynamic n-grams task
-  for n, the set of all possible n-gram distributions over binary sequences is
-  specified with 2^(n-1) probabilities, the probability of seeing a 1
-  given that the last n-1 bits were what they were
+  Implements the dynamic n-grams task - section 4.4 from the paper.
 
-  we then draw 200 bits from the current lookup table to make a training sequence
-  the first 5 bits are drawn iid from a bernoulli distribution with p=0.5
+  For every new training sequence, we generate a transition table
+  using ngram_table for n bits.
 
-  the optimal estimator works as follows
-  where c is the previous 5-bit context, if n0 and n1 are the number of
-  0s and 1s previously observed in that context
+  We then sample from that to generate a sequence of length seq_len.
 
-  p(B=1 | n0,n1,c) = (n1 + 0.5) / (n0 + n1 + 1)
-
-  for each training example, generate a 6gram distribution
-  then draw 200 bits from that distribution and use them as training
-
-  we won't worry about validation at this layer, because
-  we can validate using test mode
+  The task is simply to predict the next bit.
   """
   beta_table = ngram_table(n)
   inputs  = np.zeros((seq_len,1))
@@ -248,6 +248,8 @@ def ngrams(seq_len, n):
 
 class SequenceGen(object):
 
+  # A nasty convenience function that should be excised
+  # in favor of making all above tasks inherit from base class.
   def __init__(self, sequenceType, vec_size, hi, lo):
     if sequenceType == 'copy':
       self.out_size = vec_size
