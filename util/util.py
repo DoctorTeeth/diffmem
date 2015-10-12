@@ -129,7 +129,6 @@ def visualize(inputs, outputs, reads, writes, adds, erases):
     print "erases-" + str(idx)
     print e[idx]
 
-# TODO: refactor this into 3 different functions to get rid of isinstance calls
 def unwrap(x):
   if isinstance(x,dict):
     r = {}

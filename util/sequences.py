@@ -248,7 +248,6 @@ def ngrams(seq_len, n):
 
 class SequenceGen(object):
 
-  # TODO: add last 3 tasks to this
   def __init__(self, sequenceType, vec_size, hi, lo):
     if sequenceType == 'copy':
       self.out_size = vec_size

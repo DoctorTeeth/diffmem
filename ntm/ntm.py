@@ -84,7 +84,6 @@ class NTM(object):
       self.W['w_rsInit' + str(idx)] = np.random.randn(self.N,1)*0.01
 
     # initial condition of the memory
-    # TODO: when I look at learning stats, this seems broken?
     self.W['memsInit'] = np.random.randn(self.N,self.M)*0.01
 
   def lossFun(self, inputs, targets):

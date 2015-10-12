@@ -14,9 +14,8 @@ import pdb
 # Comment next line to remove determinism
 np.random.seed(0)
 
-# TODO: remove below line
-# exit and give stack trace on errors
-warnings.simplefilter("error")
+# Uncomment below for debugging numerical issues
+# warnings.simplefilter("error")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", help="location of the serialized model",

@@ -32,7 +32,7 @@ def content_focus(k_t, b_t, mem):
         return np.exp(b_t * cosine_sim(u, k_t))
 
     # Apply above function to every row in the matrix
-    # TODO: fix this, it must be so slow...
+    # This is surely much slower than it needs to be
     l = []
     for row in mem:
         l.append(K(row)[0])
@@ -48,9 +48,7 @@ def content_focus(k_t, b_t, mem):
 
 def shift(w_gt, s_t):
 
-    # TODO: be smarter about this convolution
-    # TODO: at least initialize this matrix only once
-    # I tried above and it doesn't seem to help much though...
+    # This function could be more performant.
     N = w_gt.size
 
     backward = [1,0,0]
