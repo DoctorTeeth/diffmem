@@ -3,6 +3,23 @@
 Reference implementations of various differentiable memory schemes for neural networks, in pure numpy.
 These are meant to serve as correctness checks against which higher performance batched GPU implementations can be evaluated.
 
+## Code Structure
+
+The code is structured as follows.
+The ntm directory has 3 files of note: ntm.py, addressing.py, and memory.py.
+
+* `addressing.py` deals with creating the memory read and write weights from the head parameters.
+* `memory.py` deals with how the memory is addressed given the read and write weights.
+* `ntm.py` implements fprop and bprop for the ntm model.
+
+The utils directory also has 3 files of note.
+
+* `optimizers.py` implements RMSprop
+* `util.py` is a grab-bag of helper functions.
+* `sequences.py` generates syntetic test and training data for the tasks from the paper.
+
+The root directory contains dotfiles and `run_model.py`, the latter of which allows for training and testing of the ntm model on various tasks depending on the arguments passed to it.
+
 ## Setup
 
 You will need to install the autograd library (`pip install autograd`). 
