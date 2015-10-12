@@ -6,7 +6,7 @@ These are meant to serve as correctness checks against which higher performance 
 ## Setup
 
 You will need to install the autograd library (`pip install autograd`). 
-I'm using autograd to do the backprop, since the architecture of the models is still in flux, but I found (at least when benchmarked using a GRU I have) that it's about 8x slower than doing backprop manually, so once I'm sure that everything is working properly I'll probably get rid of that dependency.
+I'm using autograd to do the backprop, since the architecture of the models is still in flux, but I found (at least when benchmarked using a GRU I have) that it's about 8x slower than doing backprop manually (maybe this is operator error?), so once I'm sure that everything is working properly I'll probably get rid of that dependency.
 
 ## Models
 
