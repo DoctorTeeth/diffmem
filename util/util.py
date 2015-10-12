@@ -105,7 +105,6 @@ def visualize(inputs, outputs, reads, writes, adds, erases):
   wi = inputs.shape[0]
   hi = outputs[0].shape[0]
   np.set_printoptions(formatter={'float': '{: 0.1f}'.format}, linewidth=150)
-  # pdb.set_trace()
   out = toArray(outputs, hi, wi)
   ins = np.array(inputs.T,dtype='float')
   heads = len(reads)
@@ -151,4 +150,3 @@ def unwrap(x):
     return l
   else:
     return x.value
-
