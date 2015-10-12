@@ -1,25 +1,31 @@
 import autograd.numpy as np
 
 def l2(x):
-  return np.sqrt(np.sum(np.multiply(x,x)))
+  return np.sqrt(np.sum(np.multiply(x, x)))
 
 class RMSProp(object):
 
   def __init__(self, W, learning_rate=10e-5, decay=0.95, blend=0.95):
     """
-    learning rate governs how much we use the computed grad
-    decay governs how quickly accumulated momentum drops off
-    blend governs how the running estimate of E(x)^2 and E(x)
-      are updated
+    This is the Alex Graves RMSProp variant from
+    Generating Sequences with Recurrent Neural Networks.
+
+    It scales parameter updates by a running estimate of the variance
+    of the parameter rather than just a running estimate of the magnitude.
+
+    decay governs how fast the momentum falls off.
+
+    blend governs the extent to which we take the current parameter value
+      into account when updating our estimate of variance.
     """
     self.lr = learning_rate
     self.d = decay
     self.b = blend
 
-    self.ns  = {}
-    self.gs  = {}
+    self.ns  = {} # store the mean of the square
+    self.gs  = {} # store the mean, which will later be squared
     self.ms  = {} # momentum
-    self.qs  = {} # update norm over param norm - want this to stay around 10e-3
+    self.qs  = {} # update norm over param norm - ideally this stays around 10e-3
     for k, v in W.iteritems():
       self.ns[k]  = np.zeros_like(v)
       self.gs[k]  = np.zeros_like(v)
