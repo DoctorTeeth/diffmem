@@ -3,7 +3,6 @@ This module implements addressing as described in the paper.
 It's basically a python version of figure 2.
 """
 import autograd.numpy as np
-import sys
 
 def cosine_sim(a_t, b_t):
     """
@@ -29,6 +28,10 @@ def content_focus(k_t, b_t, mem):
     memObject is a ref to our NTM memory object.
     """
     def K(u):
+        """
+        Given the key vector k_t, compute our sim
+        function between k_t and u and exponentiate.
+        """
         return np.exp(b_t * cosine_sim(u, k_t))
 
     # Apply above function to every row in the matrix
@@ -47,14 +50,17 @@ def content_focus(k_t, b_t, mem):
     return n/d
 
 def shift(w_gt, s_t):
+    """
+    Perform the shifting operation as described in equation 8 from the paper.
+    """
 
     # This function could be more performant.
     N = w_gt.size
 
-    backward = [1,0,0]
-    same     = [0,1,0]
-    forward  = [0,0,1]
-    null     = [0,0,0]
+    backward = [1, 0, 0]
+    same     = [0, 1, 0]
+    forward  = [0, 0, 1]
+    null     = [0, 0, 0]
 
     restrictionList = []
     for i in range(0, N):
@@ -112,5 +118,8 @@ def location_focus(g_t, s_t, gamma_t, w_old, w_content):
     return w_t
 
 def create_weights(k_t, b_t, g_t, s_t, gamma_t, w_old, mem):
-   w_content = content_focus(k_t, b_t, mem)
-   return location_focus(g_t, s_t, gamma_t, w_old, w_content)
+    """
+    Convenience function to be called from NTM fprop.
+    """
+    w_content = content_focus(k_t, b_t, mem)
+    return location_focus(g_t, s_t, gamma_t, w_old, w_content)
