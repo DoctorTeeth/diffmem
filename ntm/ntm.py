@@ -33,6 +33,9 @@ class NTM(object):
     self.W['by']  = rando(out_size, 1)
     self.W['bo']  = rando(hidden_size, 1)
 
+    # Parameter for learnable content addressing
+    self.W['c1'] = rando(1, self.M)
+
     # head parameters
     for idx in range(self.heads):
 
@@ -158,13 +161,18 @@ class NTM(object):
           adds[idx][t] = np.tanh(np.dot(W['oadds' + str(idx)], os[t]) + W['badds' + str(idx)])
           erases[idx][t] = sigmoid(np.dot(W['oerases' + str(idx)], os[t]) + W['erases' + str(idx)])
 
+          # define learnable function for content based addressing
+          def kfunc(loc):
+            return np.dot(W['c1'], loc)
+
           w_ws[idx][t] = addressing.create_weights(   k_ws[idx][t]
                                                     , beta_ws[idx][t]
                                                     , g_ws[idx][t]
                                                     , s_ws[idx][t]
                                                     , gamma_ws[idx][t]
                                                     , w_ws[idx][t-1]
-                                                    , mems[t-1])
+                                                    , mems[t-1]
+                                                    , kfunc)
 
           w_rs[idx][t] = addressing.create_weights(   k_rs[idx][t]
                                                     , beta_rs[idx][t]
@@ -172,7 +180,8 @@ class NTM(object):
                                                     , s_rs[idx][t]
                                                     , gamma_rs[idx][t]
                                                     , w_rs[idx][t-1]
-                                                    , mems[t-1])
+                                                    , mems[t-1]
+                                                    , kfunc)
 
         ys[t] = np.dot(W['oy'], os[t]) + W['by']
         ps[t] = sigmoid(ys[t])

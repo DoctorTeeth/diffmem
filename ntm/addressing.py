@@ -4,22 +4,7 @@ It's basically a python version of figure 2.
 """
 import autograd.numpy as np
 
-def cosine_sim(a_t, b_t):
-    """
-    Computes the cosine similarity of vectors a and b.
-    Specifically \frac{u \cdot v}{||u|| \cdot ||v||}.
-    """
-    # numerator is the inner product
-    num = np.dot(a_t, b_t)
-
-    # denominator is the product of the norms
-    anorm = np.sqrt(np.sum(a_t*a_t))
-    bnorm = np.sqrt(np.sum(b_t*b_t))
-    den2 = (anorm * bnorm) + 1e-5
-
-    return num / den2
-
-def content_focus(k_t, b_t, mem):
+def content_focus(k_t, b_t, mem, kfunc):
     """
     The content-addressing method described in 3.3.1.
     Specifically, this is equations (5) and (6).
@@ -29,10 +14,10 @@ def content_focus(k_t, b_t, mem):
     """
     def K(u):
         """
-        Given the key vector k_t, compute our sim
+        Given the key vector k_t, compute our kfunc
         function between k_t and u and exponentiate.
         """
-        return np.exp(b_t * cosine_sim(u, k_t))
+        return np.exp(b_t * kfunc(u))
 
     # Apply above function to every row in the matrix
     # This is surely much slower than it needs to be
@@ -117,9 +102,9 @@ def location_focus(g_t, s_t, gamma_t, w_old, w_content):
 
     return w_t
 
-def create_weights(k_t, b_t, g_t, s_t, gamma_t, w_old, mem):
+def create_weights(k_t, b_t, g_t, s_t, gamma_t, w_old, mem, kfunc):
     """
     Convenience function to be called from NTM fprop.
     """
-    w_content = content_focus(k_t, b_t, mem)
+    w_content = content_focus(k_t, b_t, mem, kfunc)
     return location_focus(g_t, s_t, gamma_t, w_old, w_content)
