@@ -36,6 +36,10 @@ class NTM(object):
     # Parameter for learnable content addressing
     self.W['c1'] = rando(1, self.M)
 
+    # bias for learnable content addressing
+    # I suspect this won't matter, since it goes into softmax
+    self.W['bc1'] = rando(1, 1)
+
     # head parameters
     for idx in range(self.heads):
 
@@ -162,8 +166,10 @@ class NTM(object):
           erases[idx][t] = sigmoid(np.dot(W['oerases' + str(idx)], os[t]) + W['erases' + str(idx)])
 
           # define learnable function for content based addressing
+          # TODO: make this deep and nonlinear and a function of o also
           def kfunc(loc):
-            return np.dot(W['c1'], loc)
+            h = np.dot(W['c1'], loc) + W['bc1']
+            return h
 
           w_ws[idx][t] = addressing.create_weights(   k_ws[idx][t]
                                                     , beta_ws[idx][t]
