@@ -66,19 +66,42 @@ def copy_sequence(seq_len, vec_size):
   outputs[seq_len+2:] = out_sequence
   return inputs, outputs, seq_len
 
-def easy_copy(seq_len, vec_size):
+def biggest_sum(seq_len, vec_size):
   """
-  Returns inputs, outputs
-  where inputs is a length 2 * seq_len + 2 sequence of vec_size + 2 vecs
-  and outputs is a length 2 * seq_len + 2 sequence of vec_size vecs
+  Inputs is seq_len random bit vectors of size vec_size
+  The task is to output the bit vector with the highest number of 1s.
+  If there are ties, output the first seen.
+  """
+  length = seq_len + 2 + 1
+  input_size = vec_size + 2
+  output_size = vec_size
+  inputs  = np.zeros((length,input_size),dtype=np.float32)
+  outputs = np.zeros((length,output_size),dtype=np.float32)
 
-  This task is the same as the copy task, but either the input bit or the output
-  bit is always on, so that the NTM doesn't have to remember whether it needs to
-  be reading or writing. Thus, this task is strictly easier than the copy task.
-  """
-  inputs, outputs, _ = copy_sequence(seq_len, vec_size)
-  inputs[1:seq_len,-2] = 1
-  inputs[seq_len+2:-1,-1] = 1
+  in_sequence = np.random.randint(2, size=(seq_len, input_size))
+  in_sequence[:,-2:] = 0
+  inputs[1:seq_len+1] = in_sequence
+
+  # set start bit in inputs
+  start_vec = np.zeros(input_size)
+  start_vec[-2] = 1
+  inputs[0] = start_vec
+
+  # set stop bit
+  stop_vec = np.zeros(input_size)
+  stop_vec[-1] = 1
+  inputs[seq_len+1] = stop_vec
+
+  # find solution vector
+  best = -1
+  for row in in_sequence:
+    this_sum = np.sum(row)
+    if this_sum > best:
+      answer = row[:-2]
+      best = this_sum
+
+  outputs[-1] = answer
+
   return inputs, outputs, seq_len
 
 def repeat_copy(seq_len, vec_size, repeats):
@@ -265,6 +288,13 @@ class SequenceGen(object):
         seq_len = np.random.randint(lo, hi + 1)
         repeats = np.random.randint(lo, hi + 1)
         return repeat_copy(seq_len, vec_size, repeats)
+      self.make = make
+    elif sequenceType == 'biggest_sum':
+      self.out_size = vec_size
+      self.in_size  = vec_size + 2
+      def make():
+        seq_len = np.random.randint(lo, hi + 1)
+        return biggest_sum(seq_len, vec_size)
       self.make = make
     elif sequenceType == 'associative_recall':
       self.out_size = vec_size
