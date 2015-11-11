@@ -78,6 +78,8 @@ def biggest_sum(seq_len, vec_size):
   inputs  = np.zeros((length,input_size),dtype=np.float32)
   outputs = np.zeros((length,output_size),dtype=np.float32)
 
+  ideal_sum = vec_size / 2 #what the most balanced sum would be
+
   in_sequence = np.random.randint(2, size=(seq_len, input_size))
   in_sequence[:,-2:] = 0
   inputs[1:seq_len+1] = in_sequence
@@ -93,12 +95,12 @@ def biggest_sum(seq_len, vec_size):
   inputs[seq_len+1] = stop_vec
 
   # find solution vector
-  best = -1
+  best = vec_size # as big as sum can be
   for row in in_sequence:
-    this_sum = np.sum(row)
-    if this_sum > best:
+    this_diff = abs(np.sum(row) - ideal_sum)
+    if this_diff < best:
       answer = row[:-2]
-      best = this_sum
+      best = this_diff
 
   outputs[-1] = answer
 
@@ -321,3 +323,5 @@ class SequenceGen(object):
       self.make = make
     else:
       raise NotImplementedError
+
+print biggest_sum(3,4)
