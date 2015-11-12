@@ -323,5 +323,3 @@ class SequenceGen(object):
       self.make = make
     else:
       raise NotImplementedError
-
-print biggest_sum(3,4)

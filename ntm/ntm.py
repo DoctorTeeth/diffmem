@@ -36,13 +36,14 @@ class NTM(object):
             #h = np.tanh(np.dot(W['ch'], loc) + W['bch'])
             #j = np.tanh(np.dot(W['cj'], h) + W['bcj'])
 
+    key_units = 10
     # Parameter for learnable content addressing
-    self.W['ch'] = rando(self.M, self.M)
-    self.W['cj'] = rando(1, self.M)
+    self.W['ch'] = rando(key_units, self.M)
+    self.W['cj'] = rando(1, key_units)
 
     # bias for learnable content addressing
     # I suspect this won't matter, since it goes into softmax
-    self.W['bch'] = rando(self.M, 1)
+    self.W['bch'] = rando(key_units, 1)
     self.W['bcj'] = rando(1, 1)
 
     # head parameters
@@ -173,7 +174,9 @@ class NTM(object):
           # define learnable function for content based addressing
           # TODO: make this deep and nonlinear and a function of k also
           def kfunc(loc):
-            h = np.tanh(np.dot(W['ch'], loc) + W['bch'])
+            dim = loc.shape[0]
+            first = np.reshape(loc,(dim,1))
+            h = np.tanh(np.dot(W['ch'], first) + W['bch'])
             j = np.tanh(np.dot(W['cj'], h) + W['bcj'])
             return j
 
