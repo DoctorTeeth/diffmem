@@ -4,36 +4,6 @@ It's basically a python version of figure 2.
 """
 import autograd.numpy as np
 
-def content_focus(k_t, b_t, mem, kfunc):
-    """
-    The content-addressing method described in 3.3.1.
-    Specifically, this is equations (5) and (6).
-    k_t is the similarity key vector.
-    b_t is the similarity key strength.
-    memObject is a ref to our NTM memory object.
-    """
-    def K(u):
-        """
-        Given the key vector k_t, compute our kfunc
-        function between k_t and u and exponentiate.
-        """
-        return np.exp(b_t * kfunc(u))
-
-    # Apply above function to every row in the matrix
-    # This is surely much slower than it needs to be
-    l = []
-    for row in mem:
-        l.append(K(row)[0])
-
-    # Return the normalized similarity weights
-    # This is essentially a softmax over the similarities
-        # with an extra degree of freedom parametrized by b_t
-    sims = np.array(l)
-
-    n = sims
-    d = np.sum(sims)
-    return n/d
-
 def shift(w_gt, s_t):
     """
     Perform the shifting operation as described in equation 8 from the paper.
@@ -106,5 +76,5 @@ def create_weights(k_t, b_t, g_t, s_t, gamma_t, w_old, mem, kfunc):
     """
     Convenience function to be called from NTM fprop.
     """
-    w_content = content_focus(k_t, b_t, mem, kfunc)
+    w_content = kfunc(mem, k_t)
     return location_focus(g_t, s_t, gamma_t, w_old, w_content)

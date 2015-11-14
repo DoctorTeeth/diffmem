@@ -33,18 +33,24 @@ class NTM(object):
     self.W['by']  = rando(out_size, 1)
     self.W['bo']  = rando(hidden_size, 1)
 
-            #h = np.tanh(np.dot(W['ch'], loc) + W['bch'])
-            #j = np.tanh(np.dot(W['cj'], h) + W['bcj'])
+    """
+    Must add Wkh
+    M is the N by M memory matrix, and k is the M by 1 key
+
+    j goes to N
+    and bcj must be (N,1)
+    """
 
     key_units = 10
     # Parameter for learnable content addressing
-    self.W['ch'] = rando(key_units, self.M)
-    self.W['cj'] = rando(1, key_units)
+    self.W['ch'] = rando(key_units, self.M*self.N)
+    self.W['kh'] = rando(key_units, self.M)
+    self.W['cj'] = rando(self.N, key_units)
 
     # bias for learnable content addressing
     # I suspect this won't matter, since it goes into softmax
     self.W['bch'] = rando(key_units, 1)
-    self.W['bcj'] = rando(1, 1)
+    self.W['bcj'] = rando(self.N, 1)
 
     # head parameters
     for idx in range(self.heads):
@@ -172,13 +178,24 @@ class NTM(object):
           erases[idx][t] = sigmoid(np.dot(W['oerases' + str(idx)], os[t]) + W['erases' + str(idx)])
 
           # define learnable function for content based addressing
-          # TODO: make this deep and nonlinear and a function of k also
-          def kfunc(loc):
-            dim = loc.shape[0]
-            first = np.reshape(loc,(dim,1))
-            h = np.tanh(np.dot(W['ch'], first) + W['bch'])
+          def kfunc(M, k):
+            """
+            Must add Wkh
+            M is the N by M memory matrix, and k is the M by 1 key
+            so Wch has to be (hidden,self.M*self.N)
+            Wkh has to be (hidden, self.M)
+            bch has to be (hidden, 1)
+
+            j goes to N
+            so Wcj must be (N, hidden)
+            and bcj must be (N,1)
+            """
+            mem = np.reshape(M,(self.M * self.N,1))
+            a = np.dot(W['ch'], mem)
+            b = np.dot(W['kh'], k)
+            h = np.tanh(a + b + W['bch'])
             j = np.tanh(np.dot(W['cj'], h) + W['bcj'])
-            return j
+            return softmax(j)
 
           w_ws[idx][t] = addressing.create_weights(   k_ws[idx][t]
                                                     , beta_ws[idx][t]
