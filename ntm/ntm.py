@@ -199,17 +199,24 @@ class NTM(object):
       return np.sum(loss)
 
     def manual_grads(params):
+      """
+      Compute the gradient of the loss WRT the parameters
+      Ordering of the operations is reverse of that in fprop()
+      """
       deltas = {}
       for key, val in params.iteritems():
         deltas[key] = np.zeros_like(val)
 
       loss, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases = self.stats
-      dd = [{} for idx in range(self.heads)]
+      dd = [{} for _ in range(self.heads)]
       for t in reversed(xrange(len(targets))):
         if t < len(inputs) - 1:
-          dt = dd[idx][t + 1]
           for idx in range(self.heads):
+            # grab gradient from the future
+            dnext = dd[idx][t + 1]
             # TODO: gradient of read and write
+            # update dnext, which will be used for updating the
+            # parameters used for creating the weights
             pass
 
         ts = np.reshape(np.array(targets[t]),(self.out_size,1))
@@ -222,9 +229,11 @@ class NTM(object):
         deltas['oy'] = np.dot(dt, os[t].T)
         deltas['by'] = dt
 
-        for idx in range(self.heads):
-          # TODO: Update parameters oadds, oerases, ok_r, bbeta_r, og_r, os_r, ok_w ...
-          pass
+        if t < len(inputs) - 1:
+          for idx in range(self.heads):
+            # TODO: Update parameters oadds, oerases, ok_r, bbeta_r, og_r, os_r, ok_w ...
+            # use dnext computed above as the starting gradient
+            pass
 
         dt = np.dot(params['oy'].T, dt)
         dt *= tanh_prime(zos[t])

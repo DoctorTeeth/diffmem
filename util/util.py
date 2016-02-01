@@ -15,7 +15,7 @@ def gradCheck(model, deltas, inputs, targets, epsilon, tolerance):
   diffs = getDiffs(model, deltas, inputs, targets, epsilon)
   answer = True
 
-  for diffTensor, name, delta in zip(diffs, model.names, deltas):
+  for diffTensor, name, delta in zip(diffs, model.W.keys(), deltas.values()):
 
     if np.abs(diffTensor.max()) >= tolerance:
       print "DIFF CHECK FAILS FOR TENSOR: ", name
@@ -41,33 +41,32 @@ def getDiffs(model, deltas, inputs, targets, epsilon):
   """
 
   diff_tensors = []
-  for D in deltas:
+  for D in deltas.values():
     diff_tensors.append(np.zeros_like(D))
 
-  for W,D,diffs in zip(model.weights, deltas, diff_tensors):
+  for W,D,diffs in zip(model.W.values(), deltas.values(), diff_tensors):
   # for each weight tensor in our model
 
-    for i in range(W.shape[0]):
-      for j in range(W.shape[1]):
-        # for each weight in that tensor
+    i = np.random.randint(W.shape[0])
+    j = np.random.randint(W.shape[1])
 
-        # compute f(x+h) for that weight
-        W[i,j] += epsilon
-        loss, _, _, _, _, _, _  = model.lossFun(inputs, targets, False)
-        loss_plus = np.sum(loss)
+    # compute f(x+h) for that weight
+    W[i,j] += epsilon
+    loss, _, _, _, _, _, _  = model.lossFun(inputs, targets, False)
+    loss_plus = np.sum(loss)
 
-        # compute f(x - h) for that weight
-        W[i,j] -= epsilon*2
-        loss, _, _, _, _, _, _ = model.lossFun(inputs, targets, False)
-        loss_minus = np.sum(loss)
+    # compute f(x - h) for that weight
+    W[i,j] -= epsilon*2
+    loss, _, _, _, _, _, _ = model.lossFun(inputs, targets, False)
+    loss_minus = np.sum(loss)
 
-        # grad check must leave weights unchanged
-        # so reset the weight that we changed
-        W[i,j] += epsilon
+    # grad check must leave weights unchanged
+    # so reset the weight that we changed
+    W[i,j] += epsilon
 
-        # compute the numerical grad w.r.t. this param
-        grad = (loss_plus - loss_minus) / (2 * epsilon)
-        diffs[i,j] = grad - D[i,j]
+    # compute the numerical grad w.r.t. this param
+    grad = (loss_plus - loss_minus) / (2 * epsilon)
+    diffs[i,j] = grad - D[i,j]
 
   return diff_tensors
 
