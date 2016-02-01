@@ -1,9 +1,10 @@
 """
 This module implements a neural turing machine.
 """
+import math
 import autograd.numpy as np
 from autograd import grad
-from util.util import rando, sigmoid, softmax, softplus, unwrap
+from util.util import rando, sigmoid, softmax, softplus, unwrap, sigmoid_prime, tanh_prime
 import memory
 import addressing
 
@@ -87,7 +88,7 @@ class NTM(object):
     # initial condition of the memory
     self.W['memsInit'] = np.random.randn(self.N,self.M)*0.01
 
-  def lossFun(self, inputs, targets):
+  def lossFun(self, inputs, targets, manual_grad=False):
     """
     Returns the loss given an inputs,targets tuple
     """
@@ -99,7 +100,7 @@ class NTM(object):
 
       W = params # aliasing for brevity
 
-      xs, hs, ys, ps, ts, os = {}, {}, {}, {}, {}, {}
+      xs, zhs, hs, ys, ps, ts, zos, os = {}, {}, {}, {}, {}, {}, {}, {}
 
       def l():
         """
@@ -128,9 +129,11 @@ class NTM(object):
         rsum = 0
         for idx in range(self.heads):
           rsum = rsum + np.dot(W['rh' + str(idx)], np.reshape(rs[idx][t-1],(self.M,1)))
-        hs[t] = np.tanh(np.dot(W['xh'], xs[t]) + rsum + W['bh'])
+        zhs[t] = np.dot(W['xh'], xs[t]) + rsum + W['bh']
+        hs[t] = np.tanh(zhs[t])
 
-        os[t] = np.tanh(np.dot(W['ho'], hs[t]) + W['bo'])
+        zos[t] = np.dot(W['ho'], hs[t]) + W['bo']
+        os[t] = np.tanh(zos[t])
 
 
         for idx in range(self.heads):
@@ -192,19 +195,69 @@ class NTM(object):
           # write into the memory
           mems[t] = memory.write(mems[t-1],w_ws[idx][t],erases[idx][t],adds[idx][t])
 
-      self.stats = [loss, ps, w_rs, w_ws, adds, erases]
+      self.stats = [loss, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases]
       return np.sum(loss)
 
-    def bprop(params):
+    def manual_grads(params):
+      deltas = {}
+      for key, val in params.iteritems():
+        deltas[key] = np.zeros_like(val)
+
+      loss, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases = self.stats
+      dd = [{} for idx in range(self.heads)]
+      for t in reversed(xrange(len(targets))):
+        if t < len(inputs) - 1:
+          dt = dd[idx][t + 1]
+          for idx in range(self.heads):
+            # TODO: gradient of read and write
+            pass
+
+        ts = np.reshape(np.array(targets[t]),(self.out_size,1))
+        # gradient of cross entropy loss function.
+        dt = (ps[t] - ts) / (math.log(2) * ps[t] * (1 - ps[t]))
+
+        # propagate the gradient backwards through the flow graph,
+        # updating parameters as we go
+        dt *= sigmoid_prime(ys[t])
+        deltas['oy'] = np.dot(dt, os[t].T)
+        deltas['by'] = dt
+
+        for idx in range(self.heads):
+          # TODO: Update parameters oadds, oerases, ok_r, bbeta_r, og_r, os_r, ok_w ...
+          pass
+
+        dt = np.dot(params['oy'].T, dt)
+        dt *= tanh_prime(zos[t])
+        deltas['ho'] = np.dot(dt, hs[t].T)
+        deltas['bo'] = dt
+
+        dt = np.dot(params['ho'].T, dt)
+        dt *= tanh_prime(zhs[t])
+        deltas['xh'] = np.dot(dt, xs[t].T)
+        deltas['bh'] = dt
+
+        for idx in range(self.heads):
+            deltas['rh' + str(idx)] += np.dot(dt, rs[idx][t-1].reshape((self.M, 1)).T)
+            # save the gradient for propagating backwards through time
+            dd[idx][t] = np.dot(params['rh' + str(idx)].T, dt)
+      return deltas
+
+    def bprop(params, manual_grad):
       """
       Compute the gradient of the loss WRT the parameters (W)
-      using backward-mode automatic differentiation.
+      using backward-mode differentiation.
       """
-      f = grad(fprop)
-      return f(params)
+      if manual_grad:
+        # compute gradients manually
+        fprop(params)
+        deltas = manual_grads(params)
+      else:
+        # compute gradients automatically
+        f = grad(fprop)
+        deltas = f(params)
+      return deltas
 
-    deltas = bprop(self.W)
+    deltas = bprop(self.W, manual_grad)
+    loss, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases = map(unwrap, self.stats)
 
-    loss, ps, reads, writes, adds, erases = map(unwrap,self.stats)
-
-    return loss, deltas, ps, reads, writes, adds, erases
+    return loss, deltas, ps, w_rs, w_ws, adds, erases

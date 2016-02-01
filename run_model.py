@@ -46,8 +46,10 @@ parser.add_argument("--serialize_to", help="where to save models",
                     default=None)
 parser.add_argument('--test_mode', dest='test_mode', action='store_true')
 parser.add_argument('--grad_check', dest='grad_check', action='store_true')
+parser.add_argument('--manual_grad', dest='manual_grad', action='store_true')
 parser.set_defaults(test_mode=False)
 parser.set_defaults(grad_check=False)
+parser.set_defaults(manual_grad=False)
 args = parser.parse_args()
 
 # create directory for serializations if necessary
@@ -87,14 +89,13 @@ optimizer = RMSProp(model.W)
 n = 0 # counts the number of sequences trained on
 bpc = None # keeps track of trailing bpc (cost)
 
-# train forever
-while True:
+while n < 100:
 
   i, t, seq_len = seq.make()
   inputs = np.matrix(i)
   targets = np.matrix(t)
 
-  loss, deltas, outputs, r, w, a, e = model.lossFun(inputs, targets)
+  loss, deltas, outputs, r, w, a, e = model.lossFun(inputs, targets, args.manual_grad)
 
   newbpc = np.sum(loss) / ((seq_len*2 + 2) * vec_size)
   if bpc is not None:

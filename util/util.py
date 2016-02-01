@@ -186,5 +186,16 @@ def unwrap(x):
           r[k] = v
       l.append(r)
     return l
-  else:
+  elif type(x) == np.numpy_extra.ArrayNode:
     return x.value
+  else:
+    return x
+
+def sigmoid_prime(z):
+    y = sigmoid(z)
+    return y * (1 - y)
+
+def tanh_prime(z):
+    y = np.tanh(z)
+    return 1 - y * y
+
