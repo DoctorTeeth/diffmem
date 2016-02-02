@@ -190,3 +190,14 @@ def tanh_prime(z):
     y = np.tanh(z)
     return 1 - y * y
 
+def compare_deltas(baseline=None, candidate=None, abs_tol=1e-7):
+  # TODO: maybe add relative tolerance check
+  if baseline.shape != candidate.shape:
+    return False
+  diff_tensor = np.abs(baseline - candidate)
+  max_error = np.max(diff_tensor)
+  if max_error > abs_tol:
+    return False
+  else:
+    return True
+
