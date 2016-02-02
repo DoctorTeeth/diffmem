@@ -178,8 +178,8 @@ class NTM(object):
         ts[t] = np.reshape(np.array(targets[t]),(self.out_size,1))
 
         epsilon = 2**-23 # to prevent log(0)
-        a = np.multiply(ts[t] , np.log2(ps[t] + epsilon))
-        b = np.multiply(one - ts[t], np.log2(one-ps[t] + epsilon))
+        a = np.multiply(ts[t] , np.log(ps[t] + epsilon))
+        b = np.multiply(one - ts[t], np.log(one-ps[t] + epsilon))
         loss = loss - (a + b)
 
         # read from the memory
@@ -203,43 +203,41 @@ class NTM(object):
       loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases = self.stats
       dd = {}
       for t in reversed(xrange(len(targets))):
-        if t < len(inputs) - 1:
-         # grab gradient from the future
-         dnext = dd[t+1]
-         # propagate the gradients to the first input of read().
-         dread1 = np.dot(mems[t-1], dnext)
-         # propagate the gradients to the second input of read().
-         dread2 = np.dot(w_rs[t], dnext.T)
-         # TODO: propagate the gradients through write()
+        # if t < len(inputs) - 1:
+        #   # grab gradient from the future
+        #   dnext = dd[t+1]
+        #   # propagate the gradients to the first input of read().
+        #   dread1 = np.dot(mems[t-1], dnext)
+        #   # propagate the gradients to the second input of read().
+        #   dread2 = np.dot(w_rs[t], dnext.T)
+        #   # TODO: propagate the gradients through write()
 
-        ts = np.reshape(np.array(targets[t]),(self.out_size,1))
-        # gradient of cross entropy loss function.
-        dt = (ps[t] - ts) / (math.log(2) * ps[t] * (1 - ps[t]))
+        # import pdb; pdb.set_trace()
+        dy = np.copy(ps[t])
+        # ts[t] = np.reshape(np.array(targets[t]),(self.out_size,1))
+        dy -= targets[t].T # backprop into y
 
-        # propagate the gradient backwards through the flow graph,
-        # updating parameters as we go
-        dt *= sigmoid_prime(ys[t])
-        deltas['oy'] = np.dot(dt, os[t].T)
-        deltas['by'] = dt
+        deltas['oy'] += np.dot(dy, os[t].T)
+        deltas['by'] += dy
 
         if t < len(inputs) - 1:
             # TODO: Update parameters oadds, oerases, ok_r, bbeta_r, og_r, os_r, ok_w ...
             # use dread1 and dread2 computed above as the starting gradients
             pass
 
-        dt = np.dot(params['oy'].T, dt)
-        dt *= tanh_prime(zos[t])
-        deltas['ho'] = np.dot(dt, hs[t].T)
-        deltas['bo'] = dt
+        # dt = np.dot(params['oy'].T, dt)
+        # dt *= tanh_prime(zos[t])
+        # deltas['ho'] = np.dot(dt, hs[t].T)
+        # deltas['bo'] = dt
 
-        dt = np.dot(params['ho'].T, dt)
-        dt *= tanh_prime(zhs[t])
-        deltas['xh'] = np.dot(dt, xs[t].T)
-        deltas['bh'] = dt
+        # dt = np.dot(params['ho'].T, dt)
+        # dt *= tanh_prime(zhs[t])
+        # deltas['xh'] = np.dot(dt, xs[t].T)
+        # deltas['bh'] = dt
 
-        deltas['rh'] += np.dot(dt, rs[t-1].reshape((self.M, 1)).T)
-        # save the gradient for propagating backwards through time
-        dd[t] = np.dot(params['rh'].T, dt)
+        # deltas['rh'] += np.dot(dt, rs[t-1].reshape((self.M, 1)).T)
+        # # save the gradient for propagating backwards through time
+        # dd[t] = np.dot(params['rh'].T, dt)
       return deltas
 
     def bprop(params, manual_grad):
