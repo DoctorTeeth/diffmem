@@ -109,6 +109,7 @@ class NTM(object):
         return [{} for _ in xrange(self.heads)]
 
       rs = l()
+      zk_rs = l()
       k_rs, beta_rs, g_rs, s_rs, gamma_rs = l(),l(),l(),l(),l()
       k_ws, beta_ws, g_ws, s_ws, gamma_ws = l(),l(),l(),l(),l()
       adds, erases = l(),l()
@@ -135,10 +136,10 @@ class NTM(object):
         zos[t] = np.dot(W['ho'], hs[t]) + W['bo']
         os[t] = np.tanh(zos[t])
 
-
         for idx in range(self.heads):
           # parameters to the read head
-          k_rs[idx][t] = np.tanh(np.dot(W['ok_r' + str(idx)],os[t]) + W['bk_r' + str(idx)])
+          zk_rs[idx][t] =np.dot(W['ok_r' + str(idx)],os[t]) + W['bk_r' + str(idx)]
+          k_rs[idx][t] = np.tanh(zk_rs[idx][t])
           beta_rs[idx][t] = softplus(np.dot(W['obeta_r' + str(idx)],os[t])
                                      + W['bbeta_r' + str(idx)])
           g_rs[idx][t] = sigmoid(np.dot(W['og_r' + str(idx)],os[t]) + W['bg_r' + str(idx)])
@@ -195,7 +196,7 @@ class NTM(object):
           # write into the memory
           mems[t] = memory.write(mems[t-1],w_ws[idx][t],erases[idx][t],adds[idx][t])
 
-      self.stats = [loss, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases]
+      self.stats = [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases]
       return np.sum(loss)
 
     def manual_grads(params):
@@ -207,16 +208,18 @@ class NTM(object):
       for key, val in params.iteritems():
         deltas[key] = np.zeros_like(val)
 
-      loss, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases = self.stats
+      loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases = self.stats
       dd = [{} for _ in range(self.heads)]
       for t in reversed(xrange(len(targets))):
         if t < len(inputs) - 1:
           for idx in range(self.heads):
             # grab gradient from the future
-            dnext = dd[idx][t + 1]
-            # TODO: gradient of read and write
-            # update dnext, which will be used for updating the
-            # parameters used for creating the weights
+            dnext = dd[idx][t+1]
+            # propagate the gradients to the first input of read().
+            dread1 = np.dot(mems[t-1], dnext)
+            # propagate the gradients to the second input of read().
+            dread2 = np.dot(w_rs[idx][t], dnext.T)
+            # TODO: propagate the gradients through write()
             pass
 
         ts = np.reshape(np.array(targets[t]),(self.out_size,1))
@@ -232,7 +235,7 @@ class NTM(object):
         if t < len(inputs) - 1:
           for idx in range(self.heads):
             # TODO: Update parameters oadds, oerases, ok_r, bbeta_r, og_r, os_r, ok_w ...
-            # use dnext computed above as the starting gradient
+            # use dread1 and dread2 computed above as the starting gradients
             pass
 
         dt = np.dot(params['oy'].T, dt)
@@ -267,6 +270,6 @@ class NTM(object):
       return deltas
 
     deltas = bprop(self.W, manual_grad)
-    loss, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases = map(unwrap, self.stats)
+    loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases = map(unwrap, self.stats)
 
     return loss, deltas, ps, w_rs, w_ws, adds, erases
