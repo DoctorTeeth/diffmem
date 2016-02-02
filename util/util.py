@@ -141,11 +141,6 @@ def visualize(inputs, outputs, reads, writes, adds, erases):
   np.set_printoptions(formatter={'float': '{: 0.1f}'.format}, linewidth=150)
   out = toArray(outputs, hi, wi)
   ins = np.array(inputs.T,dtype='float')
-  # r,w,a,e = {},{},{},{}
-  # r = toArray(reads[idx]  , reads[0][0].shape[0] , wi)
-  # w = toArray(writes[idx] , writes[0][0].shape[0] , wi)
-  # a = toArray(adds[idx]   , adds[0][0].shape[0] , wi)
-  # e = toArray(erases[idx] , erases[0][0].shape[0] , wi)
   print "inputs: "
   print ins
   print "outputs: "
