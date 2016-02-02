@@ -32,8 +32,6 @@ parser.add_argument("--hi", help="upper bound on seq length",
                     default=3, type=int)
 parser.add_argument("--lo", help="lower bound on seq length",
                     default=1, type=int)
-parser.add_argument("--heads", help="number of (pairs of) read and write heads",
-                    default=1, type=int)
 parser.add_argument("--units", help="number of hidden units",
                     default=100, type=int)
 parser.add_argument("--lr_rate", help="maybe halve learning rate at this interval",
@@ -74,8 +72,7 @@ if args.model is None:
   hidden_size = args.units # Size of hidden layer of neurons
   N = args.N # number of memory locations
   M = args.M # size of a memory location
-  heads = args.heads
-  model = NTM(seq.in_size, seq.out_size, hidden_size, N, M, vec_size, heads)
+  model = NTM(seq.in_size, seq.out_size, hidden_size, N, M, vec_size)
 else:
   # otherwise, load the model from specified file
   print "Using saved model:", args.model
@@ -89,7 +86,7 @@ optimizer = RMSProp(model.W)
 n = 0 # counts the number of sequences trained on
 bpc = None # keeps track of trailing bpc (cost)
 
-while n < 100:
+while n < 10:
 
   i, t, seq_len = seq.make()
   inputs = np.matrix(i)

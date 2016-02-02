@@ -13,13 +13,12 @@ class NTM(object):
   NTM with a single-layer feed-forward controller, using autodiff
   """
 
-  def __init__(self, in_size, out_size, hidden_size, N, M, vec_size, heads):
+  def __init__(self, in_size, out_size, hidden_size, N, M, vec_size):
 
     self.N = N  # the number of memory locations
     self.M = M # the number of columns in a memory location
     self.out_size = out_size
     self.vec_size = vec_size
-    self.heads = heads
     shift_width = min(3,self.N) # seems necessary for generalization
 
     self.stats = None
@@ -34,56 +33,53 @@ class NTM(object):
     self.W['by']  = rando(out_size, 1)
     self.W['bo']  = rando(hidden_size, 1)
 
-    # head parameters
-    for idx in range(self.heads):
+    # weights from last read head output to hidden layer
+    self.W['rh'] = rando(hidden_size, self.M)
 
-      # weights from last read head output to hidden layer
-      self.W['rh' + str(idx)] = rando(hidden_size, self.M)
+    # weights
+    self.W['ok_r'] = rando(self.M,hidden_size)
+    self.W['ok_w'] = rando(self.M,hidden_size)
 
-      # weights
-      self.W['ok_r' + str(idx)] = rando(self.M,hidden_size)
-      self.W['ok_w' + str(idx)] = rando(self.M,hidden_size)
+    self.W['obeta_r'] = rando(1,hidden_size)
+    self.W['obeta_w'] = rando(1,hidden_size)
 
-      self.W['obeta_r' + str(idx)] = rando(1,hidden_size)
-      self.W['obeta_w' + str(idx)] = rando(1,hidden_size)
+    # the interpolation gate is a scalar
+    self.W['og_r'] = rando(1,hidden_size)
+    self.W['og_w'] = rando(1,hidden_size)
 
-      # the interpolation gate is a scalar
-      self.W['og_r' + str(idx)] = rando(1,hidden_size)
-      self.W['og_w' + str(idx)] = rando(1,hidden_size)
+    self.W['os_r'] = rando(shift_width,hidden_size)
+    self.W['os_w'] = rando(shift_width,hidden_size)
 
-      self.W['os_r' + str(idx)] = rando(shift_width,hidden_size)
-      self.W['os_w' + str(idx)] = rando(shift_width,hidden_size)
+    # gamma is also a scalar
+    self.W['ogamma_r'] = rando(1,hidden_size)
+    self.W['ogamma_w'] = rando(1,hidden_size)
 
-      # gamma is also a scalar
-      self.W['ogamma_r' + str(idx)] = rando(1,hidden_size)
-      self.W['ogamma_w' + str(idx)] = rando(1,hidden_size)
+    self.W['oadds']   = rando(self.M,hidden_size)
+    self.W['oerases'] = rando(self.M,hidden_size)
 
-      self.W['oadds' + str(idx)]   = rando(self.M,hidden_size)
-      self.W['oerases' + str(idx)] = rando(self.M,hidden_size)
+    # biases
+    self.W['bk_r'] = rando(self.M,1)
+    self.W['bk_w'] = rando(self.M,1)
 
-      # biases
-      self.W['bk_r' + str(idx)] = rando(self.M,1)
-      self.W['bk_w' + str(idx)] = rando(self.M,1)
+    self.W['bbeta_r'] = rando(1,1)
+    self.W['bbeta_w'] = rando(1,1)
 
-      self.W['bbeta_r' + str(idx)] = rando(1,1)
-      self.W['bbeta_w' + str(idx)] = rando(1,1)
+    self.W['bg_r'] = rando(1,1)
+    self.W['bg_w'] = rando(1,1)
 
-      self.W['bg_r' + str(idx)] = rando(1,1)
-      self.W['bg_w' + str(idx)] = rando(1,1)
+    self.W['bs_r'] = rando(shift_width,1)
+    self.W['bs_w'] = rando(shift_width,1)
 
-      self.W['bs_r' + str(idx)] = rando(shift_width,1)
-      self.W['bs_w' + str(idx)] = rando(shift_width,1)
+    self.W['bgamma_r'] = rando(1,1)
+    self.W['bgamma_w'] = rando(1,1)
 
-      self.W['bgamma_r' + str(idx)] = rando(1,1)
-      self.W['bgamma_w' + str(idx)] = rando(1,1)
+    self.W['badds']  = rando(self.M,1)
+    self.W['erases'] = rando(self.M,1)
 
-      self.W['badds' + str(idx)]  = rando(self.M,1)
-      self.W['erases' + str(idx)] = rando(self.M,1)
-
-      # parameters specifying initial conditions
-      self.W['rsInit' + str(idx)] = np.random.uniform(-1,1,(self.M,1))
-      self.W['w_wsInit' + str(idx)] = np.random.randn(self.N,1)*0.01
-      self.W['w_rsInit' + str(idx)] = np.random.randn(self.N,1)*0.01
+    # parameters specifying initial conditions
+    self.W['rsInit'] = np.random.uniform(-1,1,(self.M,1))
+    self.W['w_wsInit'] = np.random.randn(self.N,1)*0.01
+    self.W['w_rsInit'] = np.random.randn(self.N,1)*0.01
 
     # initial condition of the memory
     self.W['memsInit'] = np.random.randn(self.N,self.M)*0.01
@@ -106,7 +102,7 @@ class NTM(object):
         """
         Silly utility function that should be called in init.
         """
-        return [{} for _ in xrange(self.heads)]
+        return {}
 
       rs = l()
       zk_rs = l()
@@ -114,10 +110,9 @@ class NTM(object):
       k_ws, beta_ws, g_ws, s_ws, gamma_ws = l(),l(),l(),l(),l()
       adds, erases = l(),l()
       w_ws, w_rs = l(),l() # read weights and write weights
-      for idx in range(self.heads):
-        rs[idx][-1] = self.W['rsInit' + str(idx)] # stores values read from memory
-        w_ws[idx][-1] = softmax(self.W['w_wsInit' + str(idx)])
-        w_rs[idx][-1] = softmax(self.W['w_rsInit' + str(idx)])
+      rs[-1] = self.W['rsInit'] # stores values read from memory
+      w_ws[-1] = softmax(self.W['w_wsInit'])
+      w_rs[-1] = softmax(self.W['w_rsInit'])
 
       mems = {} # the state of the memory at every timestep
       mems[-1] = self.W['memsInit']
@@ -127,56 +122,53 @@ class NTM(object):
 
         xs[t] = np.reshape(np.array(inputs[t]),inputs[t].shape[::-1])
 
-        rsum = 0
-        for idx in range(self.heads):
-          rsum = rsum + np.dot(W['rh' + str(idx)], np.reshape(rs[idx][t-1],(self.M,1)))
+        rsum = np.dot(W['rh'], np.reshape(rs[t-1],(self.M,1)))
         zhs[t] = np.dot(W['xh'], xs[t]) + rsum + W['bh']
         hs[t] = np.tanh(zhs[t])
 
         zos[t] = np.dot(W['ho'], hs[t]) + W['bo']
         os[t] = np.tanh(zos[t])
 
-        for idx in range(self.heads):
-          # parameters to the read head
-          zk_rs[idx][t] =np.dot(W['ok_r' + str(idx)],os[t]) + W['bk_r' + str(idx)]
-          k_rs[idx][t] = np.tanh(zk_rs[idx][t])
-          beta_rs[idx][t] = softplus(np.dot(W['obeta_r' + str(idx)],os[t])
-                                     + W['bbeta_r' + str(idx)])
-          g_rs[idx][t] = sigmoid(np.dot(W['og_r' + str(idx)],os[t]) + W['bg_r' + str(idx)])
-          s_rs[idx][t] = softmax(np.dot(W['os_r' + str(idx)],os[t]) + W['bs_r' + str(idx)])
-          gamma_rs[idx][t] = 1 + sigmoid(np.dot(W['ogamma_r' + str(idx)], os[t])
-                                         + W['bgamma_r' + str(idx)])
+        # parameters to the read head
+        zk_rs[t] =np.dot(W['ok_r'],os[t]) + W['bk_r']
+        k_rs[t] = np.tanh(zk_rs[t])
+        beta_rs[t] = softplus(np.dot(W['obeta_r'],os[t])
+                                    + W['bbeta_r'])
+        g_rs[t] = sigmoid(np.dot(W['og_r'],os[t]) + W['bg_r'])
+        s_rs[t] = softmax(np.dot(W['os_r'],os[t]) + W['bs_r'])
+        gamma_rs[t] = 1 + sigmoid(np.dot(W['ogamma_r'], os[t])
+                                        + W['bgamma_r'])
 
-          # parameters to the write head
-          k_ws[idx][t] = np.tanh(np.dot(W['ok_w' + str(idx)],os[t]) + W['bk_w' + str(idx)])
-          beta_ws[idx][t] = softplus(np.dot(W['obeta_w' + str(idx)], os[t])
-                                     + W['bbeta_w' + str(idx)])
-          g_ws[idx][t] = sigmoid(np.dot(W['og_w' + str(idx)],os[t]) + W['bg_w' + str(idx)])
-          s_ws[idx][t] = softmax(np.dot(W['os_w' + str(idx)],os[t]) + W['bs_w' + str(idx)])
-          gamma_ws[idx][t] = 1 + sigmoid(np.dot(W['ogamma_w' + str(idx)], os[t])
-                                         + W['bgamma_w' + str(idx)])
+        # parameters to the write head
+        k_ws[t] = np.tanh(np.dot(W['ok_w'],os[t]) + W['bk_w'])
+        beta_ws[t] = softplus(np.dot(W['obeta_w'], os[t])
+                                    + W['bbeta_w'])
+        g_ws[t] = sigmoid(np.dot(W['og_w'],os[t]) + W['bg_w'])
+        s_ws[t] = softmax(np.dot(W['os_w'],os[t]) + W['bs_w'])
+        gamma_ws[t] = 1 + sigmoid(np.dot(W['ogamma_w'], os[t])
+                                        + W['bgamma_w'])
 
-          # the erase and add vectors
-          # these are also parameters to the write head
-          # but they describe "what" is to be written rather than "where"
-          adds[idx][t] = np.tanh(np.dot(W['oadds' + str(idx)], os[t]) + W['badds' + str(idx)])
-          erases[idx][t] = sigmoid(np.dot(W['oerases' + str(idx)], os[t]) + W['erases' + str(idx)])
+        # the erase and add vectors
+        # these are also parameters to the write head
+        # but they describe "what" is to be written rather than "where"
+        adds[t] = np.tanh(np.dot(W['oadds'], os[t]) + W['badds'])
+        erases[t] = sigmoid(np.dot(W['oerases'], os[t]) + W['erases'])
 
-          w_ws[idx][t] = addressing.create_weights(   k_ws[idx][t]
-                                                    , beta_ws[idx][t]
-                                                    , g_ws[idx][t]
-                                                    , s_ws[idx][t]
-                                                    , gamma_ws[idx][t]
-                                                    , w_ws[idx][t-1]
-                                                    , mems[t-1])
+        w_ws[t] = addressing.create_weights(   k_ws[t]
+                                                , beta_ws[t]
+                                                , g_ws[t]
+                                                , s_ws[t]
+                                                , gamma_ws[t]
+                                                , w_ws[t-1]
+                                                , mems[t-1])
 
-          w_rs[idx][t] = addressing.create_weights(   k_rs[idx][t]
-                                                    , beta_rs[idx][t]
-                                                    , g_rs[idx][t]
-                                                    , s_rs[idx][t]
-                                                    , gamma_rs[idx][t]
-                                                    , w_rs[idx][t-1]
-                                                    , mems[t-1])
+        w_rs[t] = addressing.create_weights(   k_rs[t]
+                                                , beta_rs[t]
+                                                , g_rs[t]
+                                                , s_rs[t]
+                                                , gamma_rs[t]
+                                                , w_rs[t-1]
+                                                , mems[t-1])
 
         ys[t] = np.dot(W['oy'], os[t]) + W['by']
         ps[t] = sigmoid(ys[t])
@@ -189,12 +181,11 @@ class NTM(object):
         b = np.multiply(one - ts[t], np.log2(one-ps[t] + epsilon))
         loss = loss - (a + b)
 
-        for idx in range(self.heads):
-          # read from the memory
-          rs[idx][t] = memory.read(mems[t-1],w_rs[idx][t])
+        # read from the memory
+        rs[t] = memory.read(mems[t-1],w_rs[t])
 
-          # write into the memory
-          mems[t] = memory.write(mems[t-1],w_ws[idx][t],erases[idx][t],adds[idx][t])
+        # write into the memory
+        mems[t] = memory.write(mems[t-1],w_ws[t],erases[t],adds[t])
 
       self.stats = [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases]
       return np.sum(loss)
@@ -209,18 +200,16 @@ class NTM(object):
         deltas[key] = np.zeros_like(val)
 
       loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases = self.stats
-      dd = [{} for _ in range(self.heads)]
+      dd = {}
       for t in reversed(xrange(len(targets))):
         if t < len(inputs) - 1:
-          for idx in range(self.heads):
-            # grab gradient from the future
-            dnext = dd[idx][t+1]
-            # propagate the gradients to the first input of read().
-            dread1 = np.dot(mems[t-1], dnext)
-            # propagate the gradients to the second input of read().
-            dread2 = np.dot(w_rs[idx][t], dnext.T)
-            # TODO: propagate the gradients through write()
-            pass
+         # grab gradient from the future
+         dnext = dd[t+1]
+         # propagate the gradients to the first input of read().
+         dread1 = np.dot(mems[t-1], dnext)
+         # propagate the gradients to the second input of read().
+         dread2 = np.dot(w_rs[t], dnext.T)
+         # TODO: propagate the gradients through write()
 
         ts = np.reshape(np.array(targets[t]),(self.out_size,1))
         # gradient of cross entropy loss function.
@@ -233,7 +222,6 @@ class NTM(object):
         deltas['by'] = dt
 
         if t < len(inputs) - 1:
-          for idx in range(self.heads):
             # TODO: Update parameters oadds, oerases, ok_r, bbeta_r, og_r, os_r, ok_w ...
             # use dread1 and dread2 computed above as the starting gradients
             pass
@@ -248,10 +236,9 @@ class NTM(object):
         deltas['xh'] = np.dot(dt, xs[t].T)
         deltas['bh'] = dt
 
-        for idx in range(self.heads):
-            deltas['rh' + str(idx)] += np.dot(dt, rs[idx][t-1].reshape((self.M, 1)).T)
-            # save the gradient for propagating backwards through time
-            dd[idx][t] = np.dot(params['rh' + str(idx)].T, dt)
+        deltas['rh'] += np.dot(dt, rs[t-1].reshape((self.M, 1)).T)
+        # save the gradient for propagating backwards through time
+        dd[t] = np.dot(params['rh'].T, dt)
       return deltas
 
     def bprop(params, manual_grad):

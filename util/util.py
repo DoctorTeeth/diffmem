@@ -141,26 +141,23 @@ def visualize(inputs, outputs, reads, writes, adds, erases):
   np.set_printoptions(formatter={'float': '{: 0.1f}'.format}, linewidth=150)
   out = toArray(outputs, hi, wi)
   ins = np.array(inputs.T,dtype='float')
-  heads = len(reads)
-  r,w,a,e = {},{},{},{}
-  for idx in range(heads):
-    r[idx] = toArray(reads[idx]  , reads[0][0].shape[0] , wi)
-    w[idx] = toArray(writes[idx] , writes[0][0].shape[0] , wi)
-    a[idx] = toArray(adds[idx]   , adds[0][0].shape[0] , wi)
-    e[idx] = toArray(erases[idx] , erases[0][0].shape[0] , wi)
+  # r,w,a,e = {},{},{},{}
+  # r = toArray(reads[idx]  , reads[0][0].shape[0] , wi)
+  # w = toArray(writes[idx] , writes[0][0].shape[0] , wi)
+  # a = toArray(adds[idx]   , adds[0][0].shape[0] , wi)
+  # e = toArray(erases[idx] , erases[0][0].shape[0] , wi)
   print "inputs: "
   print ins
   print "outputs: "
   print out
-  for idx in range(heads):
-    print "reads-" + str(idx)
-    print r[idx]
-    print "writes-" + str(idx)
-    print w[idx]
-    print "adds-" + str(idx)
-    print a[idx]
-    print "erases-" + str(idx)
-    print e[idx]
+  print "reads"
+  print reads
+  print "writes"
+  print writes
+  print "adds"
+  print adds
+  print "erases"
+  print erases
 
 def unwrap(x):
   """
