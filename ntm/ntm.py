@@ -123,9 +123,7 @@ class NTM(object):
 
         xs[t] = np.reshape(np.array(inputs[t]),inputs[t].shape[::-1])
 
-        # rsum = np.dot(W['rh'], np.reshape(rs[t-1],(self.M,1)))
-        # TODO: put rsum back
-        rsum = 0
+        rsum = np.dot(W['rh'], np.reshape(rs[t-1],(self.M,1)))
         zhs[t] = np.dot(W['xh'], xs[t]) + rsum + W['bh']
         hs[t] = np.tanh(zhs[t])
 
@@ -232,9 +230,9 @@ class NTM(object):
         deltas['xh'] += np.dot(dzh, xs[t].T)
         deltas['bh'] += dzh
 
-        # deltas['rh'] += np.dot(dt, rs[t-1].reshape((self.M, 1)).T)
-        # # save the gradient for propagating backwards through time
-        # dd[t] = np.dot(params['rh'].T, dt)
+        # self.be.compound_dot(self.dhbars[t], self.r_prev[t].T, self.dWrh, beta=1.0)
+        deltas['rh'] += np.dot(dzh, rs[t-1].reshape((self.M, 1)).T)
+
       return deltas
 
     def bprop(params, manual_grad):
