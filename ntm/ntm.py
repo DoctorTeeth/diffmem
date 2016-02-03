@@ -222,9 +222,20 @@ class NTM(object):
           # right now, mems[t] influences cost through rs[t+1], via w_rs[t+1]
           dmem[t] = np.dot( w_rs[t + 1], drs[t + 1].reshape((self.M,1)).T )
           # and also through mems at next step
-          dmem[t] += dmemtilde[t+1]
+          W = np.reshape(w_ws[t+1], (w_ws[t+1].shape[0], 1))
+          E = np.reshape(erases[t+1], (erases[t+1].shape[0], 1))
+          WTE = np.dot(W, E.T)
+          KEEP = np.ones(mems[0].shape) - WTE
+          dmem[t] += np.multiply(dmemtilde[t+1], KEEP)
 
           dmemtilde[t] = dmem[t]
+
+          # erases[t] affects cost through mems[t], via w_ws[t]
+          # TODO: make derase
+          derase = np.dot(np.multiply(dmemtilde[t], -mems[t-1]).T, w_ws[t])
+
+          # zerase affects just erases through a sigmoid
+          dzerase = derase * (erases[t] * (1 - erases[t]))
 
           # adds[t] affects costs through mems[t], via w_ws
           dadd = np.dot(dmem[t].T, w_ws[t])
@@ -235,8 +246,12 @@ class NTM(object):
           # dbadds is just dzadds
           deltas['badds'] += dzadd
 
-          # deltas['xh'] += np.dot(dzh[t], xs[t].T)
           deltas['oadds'] += np.dot(dzadd, os[t].T)
+
+          deltas['berases'] += dzerase
+
+          deltas['oerases'] += np.dot(dzerase, os[t].T)
+
         else:
           drs[t] = np.zeros_like(rs[0])
           dmemtilde[t] = np.zeros_like(mems[0])
@@ -246,6 +261,7 @@ class NTM(object):
         if t < len(targets) - 1:
           # and also zadd through Woadds
           do += np.dot(params['oadds'].T, dzadd)
+          do += np.dot(params['oerases'].T, dzerase)
 
         # compute deriv w.r.t. pre-activation of o
         dzo = do * (1 - os[t] * os[t])
