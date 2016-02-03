@@ -66,7 +66,7 @@ def simple_write(mem, w_t, e_t, a_t):
         inspired by the forget/input gates in LSTM.
     """
     # # Perform erasure on the existing memory, parametrized by e_t and w_t
-    # W = np.reshape(w_t, (w_t.shape[0], 1))
+    W = np.reshape(w_t, (w_t.shape[0], 1))
     # E = np.reshape(e_t, (e_t.shape[0], 1))
 
     # # Transpose W so we can create WTE, a matrix whose i,j-th element
@@ -77,17 +77,17 @@ def simple_write(mem, w_t, e_t, a_t):
     #     # will keep M_t[i,j]
     # KEEP = np.ones(mem.shape) - WTE
 
-    # # To complete erasure, multiply memory pointwise by KEEP
+    # To complete erasure, multiply memory pointwise by KEEP
     # newmem = np.multiply(mem, KEEP)
+    newmem = np.zeros(mem.shape)
 
-    # # Perform addition on the newly erased memory
-    # # Convert add vector to a matrix
-    # A = np.reshape(a_t, (a_t.shape[0], 1))
+    # Perform addition on the newly erased memory
+    # Convert add vector to a matrix
+    A = np.reshape(a_t, (a_t.shape[0], 1))
 
-    # # Add is the add vector weighted by w_t, which is added pointwise to
-    #     # the existing memory, finishing the write sequence.
-    # ADD = np.dot(W, A.T)
-    # newmem = newmem + ADD
+    # Add is the add vector weighted by w_t, which is added pointwise to
+        # the existing memory, finishing the write sequence.
+    ADD = np.dot(W, A.T)
+    newmem = newmem + ADD
 
-    # return newmem
-    return mem
+    return newmem
