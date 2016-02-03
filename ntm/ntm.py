@@ -123,7 +123,9 @@ class NTM(object):
 
         xs[t] = np.reshape(np.array(inputs[t]),inputs[t].shape[::-1])
 
-        rsum = np.dot(W['rh'], np.reshape(rs[t-1],(self.M,1)))
+        # rsum = np.dot(W['rh'], np.reshape(rs[t-1],(self.M,1)))
+        # TODO: put rsum back
+        rsum = 0
         zhs[t] = np.dot(W['xh'], xs[t]) + rsum + W['bh']
         hs[t] = np.tanh(zhs[t])
 
@@ -203,14 +205,6 @@ class NTM(object):
       loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases = self.stats
       dd = {}
       for t in reversed(xrange(len(targets))):
-        # if t < len(inputs) - 1:
-        #   # grab gradient from the future
-        #   dnext = dd[t+1]
-        #   # propagate the gradients to the first input of read().
-        #   dread1 = np.dot(mems[t-1], dnext)
-        #   # propagate the gradients to the second input of read().
-        #   dread2 = np.dot(w_rs[t], dnext.T)
-        #   # TODO: propagate the gradients through write()
 
         # import pdb; pdb.set_trace()
         dy = np.copy(ps[t])
@@ -220,20 +214,23 @@ class NTM(object):
         deltas['oy'] += np.dot(dy, os[t].T)
         deltas['by'] += dy
 
-        if t < len(inputs) - 1:
-            # TODO: Update parameters oadds, oerases, ok_r, bbeta_r, og_r, os_r, ok_w ...
-            # use dread1 and dread2 computed above as the starting gradients
-            pass
+        # compute hidden do
+        do = np.dot(params['oy'].T, dy)
 
-        # dt = np.dot(params['oy'].T, dt)
-        # dt *= tanh_prime(zos[t])
-        # deltas['ho'] = np.dot(dt, hs[t].T)
-        # deltas['bo'] = dt
+        # compute deriv w.r.t. pre-activation of o
+        dzo = do * (1 - os[t] * os[t])
 
-        # dt = np.dot(params['ho'].T, dt)
-        # dt *= tanh_prime(zhs[t])
-        # deltas['xh'] = np.dot(dt, xs[t].T)
-        # deltas['bh'] = dt
+        deltas['ho'] += np.dot(dzo, hs[t].T)
+        deltas['bo'] += dzo
+
+        # compute hidden dh
+        dh = np.dot(params['ho'].T, dzo)
+
+        # compute deriv w.r.t. pre-activation of h
+        dzh = dh * (1 - hs[t] * hs[t])
+
+        deltas['xh'] += np.dot(dzh, xs[t].T)
+        deltas['bh'] += dzh
 
         # deltas['rh'] += np.dot(dt, rs[t-1].reshape((self.M, 1)).T)
         # # save the gradient for propagating backwards through time
