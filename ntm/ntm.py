@@ -249,8 +249,6 @@ class NTM(object):
           drs[t] = np.zeros_like(rs[0])
 
 
-
-
         # compute hidden do
         do = np.dot(params['oy'].T, dy)
 
