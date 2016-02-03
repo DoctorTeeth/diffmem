@@ -75,7 +75,7 @@ class NTM(object):
     self.W['bgamma_w'] = rando(1,1)
 
     self.W['badds']  = rando(self.M,1)
-    self.W['erases'] = rando(self.M,1)
+    self.W['berases'] = rando(self.M,1)
 
     # parameters specifying initial conditions
     self.W['rsInit'] = np.random.uniform(-1,1,(self.M,1))
@@ -153,7 +153,7 @@ class NTM(object):
         # these are also parameters to the write head
         # but they describe "what" is to be written rather than "where"
         adds[t] = np.tanh(np.dot(W['oadds'], os[t]) + W['badds'])
-        erases[t] = sigmoid(np.dot(W['oerases'], os[t]) + W['erases'])
+        erases[t] = sigmoid(np.dot(W['oerases'], os[t]) + W['berases'])
 
         w_ws[t] = addressing.create_weights(   k_ws[t]
                                                 , beta_ws[t]
@@ -187,7 +187,7 @@ class NTM(object):
 
         # write into the memory
         # TODO: switch back to normal "write"
-        mems[t] = memory.simple_write(mems[t-1],w_ws[t],erases[t],adds[t])
+        mems[t] = memory.write(mems[t-1],w_ws[t],erases[t],adds[t])
 
       self.stats = [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases]
       return np.sum(loss)
