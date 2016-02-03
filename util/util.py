@@ -190,7 +190,7 @@ def tanh_prime(z):
     y = np.tanh(z)
     return 1 - y * y
 
-def compare_deltas(baseline=None, candidate=None, abs_tol=1e-7, rel_tol=1.01):
+def compare_deltas(baseline=None, candidate=None, abs_tol=1e-7, rel_tol=0.01):
   # TODO: maybe add relative tolerance check
   epsilon = 1e-25
   if baseline.shape != candidate.shape:
