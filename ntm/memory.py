@@ -79,7 +79,8 @@ def simple_write(mem, w_t, e_t, a_t):
 
     # To complete erasure, multiply memory pointwise by KEEP
     # newmem = np.multiply(mem, KEEP)
-    newmem = np.zeros(mem.shape)
+    # newmem = np.zeros(mem.shape)
+    newmem = mem
 
     # Perform addition on the newly erased memory
     # Convert add vector to a matrix

@@ -205,7 +205,8 @@ class NTM(object):
       dd = {}
       drs = {}
       dzh = {}
-      dmem = {}
+      dmem = {} # might not need this, since we have dmemtilde
+      dmemtilde = {}
       for t in reversed(xrange(len(targets))):
 
         dy = np.copy(ps[t])
@@ -220,6 +221,10 @@ class NTM(object):
 
           # right now, mems[t] influences cost through rs[t+1], via w_rs[t+1]
           dmem[t] = np.dot( w_rs[t + 1], drs[t + 1].reshape((self.M,1)).T )
+          # and also through mems at next step
+          dmem[t] += dmemtilde[t+1]
+
+          dmemtilde[t] = dmem[t]
 
           # adds[t] affects costs through mems[t], via w_ws
           dadd = np.dot(dmem[t].T, w_ws[t])
@@ -234,6 +239,7 @@ class NTM(object):
           deltas['oadds'] += np.dot(dzadd, os[t].T)
         else:
           drs[t] = np.zeros_like(rs[0])
+          dmemtilde[t] = np.zeros_like(mems[0])
 
         # o affects y through Woy
         do = np.dot(params['oy'].T, dy)
