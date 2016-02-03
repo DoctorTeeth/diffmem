@@ -234,7 +234,7 @@ class NTM(object):
           # right now, mems[t] influences cost through rs[t+1], via w_rs[t+1]
           dmem = np.dot( w_rs[t + 1], drs[t + 1].reshape((self.M,1)).T )
 
-          # adds[t] affects costs through mems[t], via w_rs 
+          # adds[t] affects costs through mems[t], via w_rs
           dadd = np.dot(dmem.T, w_rs[t])
 
           # zadds affects just adds through a tanh
@@ -242,6 +242,9 @@ class NTM(object):
 
           # dbadds is just dzadds
           deltas['badds'] += dzadd
+
+          # deltas['xh'] += np.dot(dzh[t], xs[t].T)
+          deltas['oadds'] += np.dot(dzadd, os[t].T)
         else:
           drs[t] = np.zeros_like(rs[0])
 
