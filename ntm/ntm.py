@@ -203,6 +203,8 @@ class NTM(object):
 
       loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases = self.stats
       dd = {}
+      drs = {}
+      dzh = {}
       for t in reversed(xrange(len(targets))):
 
         # import pdb; pdb.set_trace()
@@ -212,6 +214,39 @@ class NTM(object):
 
         deltas['oy'] += np.dot(dy, os[t].T)
         deltas['by'] += dy
+ 
+        # dM = np.dot(self.w_rs[t].get(), self.drs[t].get().T)
+        # rdM = np.reshape(dM, (self.N * self.M, 1))
+        # self.dmems[t][:,idx].set(rdM)
+
+        # compute dr and store it, we will need it
+        # the read affects h[t+1]
+        # if t == len(self.in_deltas) - 1:
+        #   self.drs[t][:] = 0 # TODO: find cleaner way to do this
+        # else:
+        #   self.be.compound_dot(self.Wrh.T, self.dh[t+1], self.drs[t])
+
+
+        if t < len(targets) - 1:
+          # r[t] affects cost through zh[t+1] via Wrh
+          drs[t] = np.dot(self.W['rh'].T, dzh[t + 1])
+
+          # right now, mems[t] influences cost through rs[t+1], via w_rs[t+1]
+          dmem = np.dot( w_rs[t + 1], drs[t + 1].reshape((self.M,1)).T )
+
+          # adds[t] affects costs through mems[t], via w_rs 
+          dadd = np.dot(dmem.T, w_rs[t])
+
+          # zadds affects just adds through a tanh
+          dzadd = dadd * (1 - adds[t] * adds[t])
+
+          # dbadds is just dzadds
+          deltas['badds'] += dzadd
+        else:
+          drs[t] = np.zeros_like(rs[0])
+
+
+
 
         # compute hidden do
         do = np.dot(params['oy'].T, dy)
@@ -226,13 +261,13 @@ class NTM(object):
         dh = np.dot(params['ho'].T, dzo)
 
         # compute deriv w.r.t. pre-activation of h
-        dzh = dh * (1 - hs[t] * hs[t])
+        dzh[t] = dh * (1 - hs[t] * hs[t])
 
-        deltas['xh'] += np.dot(dzh, xs[t].T)
-        deltas['bh'] += dzh
+        deltas['xh'] += np.dot(dzh[t], xs[t].T)
+        deltas['bh'] += dzh[t]
 
         # self.be.compound_dot(self.dhbars[t], self.r_prev[t].T, self.dWrh, beta=1.0)
-        deltas['rh'] += np.dot(dzh, rs[t-1].reshape((self.M, 1)).T)
+        deltas['rh'] += np.dot(dzh[t], rs[t-1].reshape((self.M, 1)).T)
 
       return deltas
 
