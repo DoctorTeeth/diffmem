@@ -186,7 +186,8 @@ class NTM(object):
         rs[t] = memory.read(mems[t-1],w_rs[t])
 
         # write into the memory
-        mems[t] = memory.write(mems[t-1],w_ws[t],erases[t],adds[t])
+        # TODO: switch back to normal "write"
+        mems[t] = memory.simple_write(mems[t-1],w_ws[t],erases[t],adds[t])
 
       self.stats = [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases]
       return np.sum(loss)
