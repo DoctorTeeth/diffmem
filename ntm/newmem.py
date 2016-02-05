@@ -8,6 +8,7 @@ import sys
 """
 Testing our hand-computed derivatives
 
+compute the grad of the Ks w.r.t. each of the outputs of the softmax
 """
 
 def softmax_0(Ks):
