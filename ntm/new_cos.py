@@ -31,7 +31,6 @@ def cosine_sim(a_t, b_t):
     return num / den2
 
 if __name__ == "__main__":
-    np.random.seed(0)
     M = 5
     u = np.random.uniform(high=1, low=-1, size=(M,))
     v = np.random.uniform(high=1, low=-1, size=(M,))
@@ -50,11 +49,17 @@ if __name__ == "__main__":
     bnorm = np.sqrt(np.sum(v*v))
     den2 = (anorm * bnorm) + 1e-5
 
-    for i in range(M):
-        a = v[i] / den2
-        b = u[i] / np.sum(np.square(u))
-        c = cosine_sim(u,v)
-        manual_deltas[i] = a - b*c
+    # for i in range(M):
+    #     a = v[i] / den2
+    #     b = u[i] / np.sum(np.square(u))
+    #     c = cosine_sim(u,v)
+    #     manual_deltas[i] = a - b*c
+
+    a = v / den2
+    b = u / np.sum(np.square(u))
+    c = cosine_sim(u,v)
+    manual_deltas = a - b*c
+    
 
     print "auto deltas"
     print auto_deltas
