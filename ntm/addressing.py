@@ -32,7 +32,7 @@ def content_focus(k_t, b_t, mem):
         Given the key vector k_t, compute our sim
         function between k_t and u and exponentiate.
         """
-        return np.exp(b_t * cosine_sim(u, k_t))
+        return np.exp(np.array([[1.0]]) * cosine_sim(u, k_t))
 
     # Apply above function to every row in the matrix
     # This is surely much slower than it needs to be
@@ -122,6 +122,6 @@ def create_weights(k_t, b_t, g_t, s_t, gamma_t, w_old, mem):
     Convenience function to be called from NTM fprop.
     """
     # TODO: add these lines back
-    # w_content = content_focus(k_t, b_t, mem)
+    w_content = content_focus(k_t, b_t, mem)
     # return location_focus(g_t, s_t, gamma_t, w_old, w_content)
-    return w_old
+    return w_content

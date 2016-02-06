@@ -4,9 +4,10 @@ This module implements a neural turing machine.
 import math
 import autograd.numpy as np
 from autograd import grad
-from util.util import rando, sigmoid, softmax, softplus, unwrap, sigmoid_prime, tanh_prime, compare_deltas
+from util.util import rando, sigmoid, softmax, softplus, unwrap, sigmoid_prime, tanh_prime, compare_deltas, dKdu
 import memory
 import addressing
+from addressing import cosine_sim
 import sys
 
 class NTM(object):
@@ -188,7 +189,8 @@ class NTM(object):
         # write into the memory
         mems[t] = memory.write(mems[t-1],w_ws[t],erases[t],adds[t])
 
-      self.stats = [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases]
+      self.stats = [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs,
+                    w_ws, adds, erases, k_rs, k_ws]
       return np.sum(loss)
 
     def manual_grads(params):
@@ -200,7 +202,7 @@ class NTM(object):
       for key, val in params.iteritems():
         deltas[key] = np.zeros_like(val)
 
-      loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases = self.stats
+      loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases, k_rs, k_ws = self.stats
       dd = {}
       drs = {}
       dzh = {}
@@ -250,6 +252,70 @@ class NTM(object):
           deltas['berases'] += dzerase
 
           deltas['oerases'] += np.dot(dzerase, os[t].T)
+
+          # compute dK for all i in N
+          # K is the evaluated cosine similarity for the i-th row of mem matrix
+          dK_r = np.zeros_like(w_rs[0])
+          dK_w = np.zeros_like(w_rs[0])
+
+
+          """
+          dK_r_dk_rs is a list of N things
+          each elt of the list corresponds to grads of K_idx
+          w.r.t. the key k_t
+          so it should be a length N list of M by 1 vectors
+          """
+
+          dK_r_dk_rs = []
+          dK_r_dmem = []
+          for i in range(self.N):
+            # let k_rs be u, Mem[i] be v
+            u = np.reshape(k_rs[t], (self.M,))
+            v = mems[t-1][i, :]
+            dK_r_dk_rs.append( dKdu(u,v) )
+            dK_r_dmem.append( dKdu(v,u))
+
+          dK_w_dk_ws = []
+          dK_w_dmem = []
+          for i in range(self.N):
+            # let k_ws be u, Mem[i] be v
+            u = np.reshape(k_ws[t], (self.M,))
+            v = mems[t-1][i, :]
+            dK_w_dk_ws.append( dKdu(u,v) )
+            dK_w_dmem.append( dKdu(v,u))
+
+          # compute delta for keys
+          dk_r = np.zeros_like(k_rs[0])
+          dk_w = np.zeros_like(k_ws[0])
+          # for every one of M elt of dk_r
+          for i in range(self.M):
+            # for every one of the N Ks
+            for j in range(self.N):
+              # add delta K_r[j] * dK_r[j] / dk_r[i]
+              # add influence on through K_r[j]
+              dk_r[i] += dK_r[j] * dK_r_dk_rs[j][i]
+              dk_w[i] += dK_w[j] * dK_w_dk_ws[j][i]
+
+          # these represent influence of mem on next K
+          du_r = np.zeros_like(mems[0])
+          du_w = np.zeros_like(mems[0])
+          # for every row in mems[t-1]
+          for i in range(self.N):
+            # for every elt of this row (one of M)
+            for j in range(self.M):
+              du_r[i,:] = dK_r[i] * dK_r_dmem[i][j]
+              du_w[i,:] = dK_w[i] * dK_w_dmem[i][j]
+
+          import pdb; pdb.set_trace()
+          # key values are activated as tanh
+          dzk_r = dk_r * (1 - k_rs[t] * k_rs[t])
+          dzk_w = dk_w * (1 - k_ws[t] * k_ws[t])
+
+          deltas['ok_r'] += np.dot(dzk_r, os[t].T)
+          deltas['ok_w'] += np.dot(dzk_w, os[t].T)
+
+          deltas['bk_r'] += dzk_r
+          deltas['bk_w'] += dzk_w
 
         else:
           drs[t] = np.zeros_like(rs[0])

@@ -205,3 +205,32 @@ def compare_deltas(baseline=None, candidate=None, abs_tol=1e-5, rel_tol=0.01):
   else:
     return True
 
+def cosine_sim(a_t, b_t):
+    """
+    Computes the cosine similarity of vectors a and b.
+    Specifically \frac{u \cdot v}{||u|| \cdot ||v||}.
+    """
+    # numerator is the inner product
+    num = np.dot(a_t, b_t)
+
+    # denominator is the product of the norms
+    anorm = np.sqrt(np.sum(a_t*a_t))
+    bnorm = np.sqrt(np.sum(b_t*b_t))
+    den2 = (anorm * bnorm) + 1e-5
+
+    return num / den2
+
+def dKdu(u, v):
+  """
+  compute the grads of a given K w.r.t. u
+  you can just switch order of args to compute it for v
+  """
+  anorm = np.sqrt(np.sum(u*u))
+  bnorm = np.sqrt(np.sum(v*v))
+  den2 = (anorm * bnorm) + 1e-5 # TODO: make this epsilon smaller?
+
+  a = v / den2
+  b = u / np.sum(np.square(u))
+  c = cosine_sim(u,v)
+  return a - b*c
+

@@ -49,12 +49,6 @@ if __name__ == "__main__":
     bnorm = np.sqrt(np.sum(v*v))
     den2 = (anorm * bnorm) + 1e-5
 
-    # for i in range(M):
-    #     a = v[i] / den2
-    #     b = u[i] / np.sum(np.square(u))
-    #     c = cosine_sim(u,v)
-    #     manual_deltas[i] = a - b*c
-
     a = v / den2
     b = u / np.sum(np.square(u))
     c = cosine_sim(u,v)
@@ -66,4 +60,7 @@ if __name__ == "__main__":
     print "manual deltas"
     print manual_deltas
 
+    """
+    manual_deltas gives us dk_i / dK_j
+    """
 
