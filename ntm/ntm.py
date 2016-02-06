@@ -4,7 +4,7 @@ This module implements a neural turing machine.
 import math
 import autograd.numpy as np
 from autograd import grad
-from util.util import rando, sigmoid, softmax, softplus, unwrap, sigmoid_prime, tanh_prime, compare_deltas, dKdu
+from util.util import rando, sigmoid, softmax, softplus, unwrap, sigmoid_prime, tanh_prime, compare_deltas, dKdu, softmax_grads
 import memory
 import addressing
 from addressing import cosine_sim
@@ -208,6 +208,8 @@ class NTM(object):
       dzh = {}
       dmem = {} # might not need this, since we have dmemtilde
       dmemtilde = {}
+      du_r = {}
+      du_w = {}
       for t in reversed(xrange(len(targets))):
 
         dy = np.copy(ps[t])
@@ -228,6 +230,8 @@ class NTM(object):
           WTE = np.dot(W, E.T)
           KEEP = np.ones(mems[0].shape) - WTE
           dmem[t] += np.multiply(dmemtilde[t+1], KEEP)
+          # and also through its influence on the content weighting next step
+          dmem[t] += du_r[t+1] + du_w[t+1]
 
           dmemtilde[t] = dmem[t]
 
@@ -253,10 +257,61 @@ class NTM(object):
 
           deltas['oerases'] += np.dot(dzerase, os[t].T)
 
+          dwc_r = np.zeros(w_rs[0].shape)
+          # for every element of the weighting
+          for i in range(self.N):
+            # for every value in the read
+            for j in range(self.M):
+              dwc_r[i] += drs[t][j] * mems[t-1][i,j]
+
+          dwc_w = np.zeros(w_ws[0].shape)
+          # for every element of the weighting
+          for i in range(self.N):
+            # for every column in the memory
+            for j in range(self.M):
+              # write weights affect memtilde through erasing
+              dwc_w[i] += dmemtilde[t][i,j] * (-erases[t][j] * mems[t-1][i,j])
+              # and they affect mem through adding
+              dwc_w[i] += dmem[t][i,j] * adds[t][j]
+
+          # dwdK_r will be an N by M that holds in the i,j-th spot
+          # the deriv of wc_r[j] w.r.t. K_r[i] (there are N Ks)
+          """
+          We need dw/dK
+          now w has N elts and K has N elts
+          and we want, for every elt of W, the grad of that elt w.r.t. each
+          of the N elts of K. that gives us N * N things
+          """
+          # first, we must build up the K values (should be taken from fprop)
+          K_rs = []
+          K_ws = []
+          for i in range(self.N):
+            K_rs.append(cosine_sim(mems[t-1][i, :], k_rs[t]))
+            K_ws.append(cosine_sim(mems[t-1][i, :], k_ws[t]))
+
+          # then, we populate the grads
+          dwdK_r = np.zeros((self.N, self.N))
+          dwdK_w = np.zeros((self.N, self.N))
+          # for every row in the memory
+          for i in range(self.N):
+            # for every element in the weighting
+            for j in range(self.N):
+              dwdK_r[i,j] += softmax_grads(K_rs, i, j)
+              dwdK_w[i,j] += softmax_grads(K_ws, i, j)
+
+
           # compute dK for all i in N
           # K is the evaluated cosine similarity for the i-th row of mem matrix
           dK_r = np.zeros_like(w_rs[0])
           dK_w = np.zeros_like(w_rs[0])
+
+          # for all i in N (for every row that we've simmed)
+          for i in range(self.N):
+            # for every j in N (for every elt of the weighting)
+            for j in range(self.N):
+              dK_r += dwc_r[j] * dwdK_r[i,j] # TODO: is order of i and j right?
+              dK_w += dwc_w[j] * dwdK_w[i,j]
+
 
 
           """
@@ -297,16 +352,15 @@ class NTM(object):
               dk_w[i] += dK_w[j] * dK_w_dk_ws[j][i]
 
           # these represent influence of mem on next K
-          du_r = np.zeros_like(mems[0])
-          du_w = np.zeros_like(mems[0])
+          du_r[t] = np.zeros_like(mems[0])
+          du_w[t] = np.zeros_like(mems[0])
           # for every row in mems[t-1]
           for i in range(self.N):
             # for every elt of this row (one of M)
             for j in range(self.M):
-              du_r[i,:] = dK_r[i] * dK_r_dmem[i][j]
-              du_w[i,:] = dK_w[i] * dK_w_dmem[i][j]
+              du_r[t][i,:] = dK_r[i] * dK_r_dmem[i][j]
+              du_w[t][i,:] = dK_w[i] * dK_w_dmem[i][j]
 
-          import pdb; pdb.set_trace()
           # key values are activated as tanh
           dzk_r = dk_r * (1 - k_rs[t] * k_rs[t])
           dzk_w = dk_w * (1 - k_ws[t] * k_ws[t])
@@ -320,6 +374,8 @@ class NTM(object):
         else:
           drs[t] = np.zeros_like(rs[0])
           dmemtilde[t] = np.zeros_like(mems[0])
+          du_r[t] = np.zeros_like(mems[0])
+          du_w[t] = np.zeros_like(mems[0])
 
         # o affects y through Woy
         do = np.dot(params['oy'].T, dy)

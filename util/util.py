@@ -234,3 +234,23 @@ def dKdu(u, v):
   c = cosine_sim(u,v)
   return a - b*c
 
+def dwdK():
+  """
+  Compute the grads of a given 
+  """
+
+"""junk"""
+def softmax_0(Ks):
+    return np.exp(Ks[0]) / np.sum(np.exp(Ks))
+
+def softmax_grads(Ks, i, j):
+  """
+  return the grad of the ith element of weighting w.r.t. j-th element of Ks
+  """
+  if j == i:
+    num = np.exp(Ks[i]) * (np.sum(np.exp(Ks)) - np.exp(Ks[i]))
+  else:
+    num = -np.exp(Ks[i] + Ks[j])
+  den1 = np.sum(np.exp(Ks))
+  return num / (den1 * den1)
+
