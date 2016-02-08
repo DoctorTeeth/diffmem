@@ -257,12 +257,14 @@ class NTM(object):
           deltas['oerases'] += np.dot(dzerase, os[t].T)
 
           # for now, content weighting affects this read through mems[t-1]
-          dwc_r = np.zeros(w_rs[0].shape)
-          # for every element of the weighting
-          for i in range(self.N):
-            # for every value in the read
-            for j in range(self.M):
-              dwc_r[i] += drs[t][j] * mems[t-1][i,j]
+          # dwc_r = np.zeros(w_rs[0].shape)
+          # # for every element of the weighting
+          # for i in range(self.N):
+          #   # for every value in the read
+          #   for j in range(self.M):
+          #     dwc_r[i] += drs[t][j] * mems[t-1][i,j]
+
+          dwc_r = np.dot(mems[t-1], drs[t])
 
           dwc_w = np.zeros(w_ws[0].shape)
           # for every element of the weighting
@@ -300,7 +302,7 @@ class NTM(object):
           # compute dK for all i in N
           # K is the evaluated cosine similarity for the i-th row of mem matrix
           dK_r = np.zeros_like(w_rs[0])
-          dK_w = np.zeros_like(w_rs[0])
+          dK_w = np.zeros_like(w_ws[0])
 
           # for all i in N (for every row that we've simmed)
           for i in range(self.N):
@@ -309,7 +311,6 @@ class NTM(object):
               dK_r[i] += dwc_r[j] * dwdK_r[i,j] # TODO: is order of i and j right?
               dK_w[i] += dwc_w[j] * dwdK_w[i,j]
 
-          # import pdb; pdb.set_trace()
           """
           dK_r_dk_rs is a list of N things
           each elt of the list corresponds to grads of K_idx
@@ -356,7 +357,6 @@ class NTM(object):
             for j in range(self.M):
               du_r[t][i,:] = dK_r[i] * dK_r_dmem[i][j]
               du_w[t][i,:] = dK_w[i] * dK_w_dmem[i][j]
-
 
           # key values are activated as tanh
           dzk_r = dk_r * (1 - k_rs[t] * k_rs[t])
