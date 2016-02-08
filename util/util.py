@@ -216,7 +216,7 @@ def cosine_sim(a_t, b_t):
     # denominator is the product of the norms
     anorm = np.sqrt(np.sum(a_t*a_t))
     bnorm = np.sqrt(np.sum(b_t*b_t))
-    den2 = (anorm * bnorm) + 1e-5
+    den2 = (anorm * bnorm) + 1e-20
 
     return num / den2
 
@@ -227,21 +227,12 @@ def dKdu(u, v):
   """
   anorm = np.sqrt(np.sum(u*u))
   bnorm = np.sqrt(np.sum(v*v))
-  den2 = (anorm * bnorm) + 1e-5 # TODO: make this epsilon smaller?
+  den2 = (anorm * bnorm) + 1e-20 
 
   a = v / den2
   b = u / np.sum(np.square(u))
   c = cosine_sim(u,v)
   return a - b*c
-
-def dwdK():
-  """
-  Compute the grads of a given 
-  """
-
-"""junk"""
-def softmax_0(Ks):
-    return np.exp(Ks[0]) / np.sum(np.exp(Ks))
 
 def softmax_grads(Ks, i, j):
   """

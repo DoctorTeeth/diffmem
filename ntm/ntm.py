@@ -236,7 +236,6 @@ class NTM(object):
           dmemtilde[t] = dmem[t]
 
           # erases[t] affects cost through mems[t], via w_ws[t]
-          # TODO: make derase
           derase = np.dot(np.multiply(dmemtilde[t], -mems[t-1]).T, w_ws[t])
 
           # zerase affects just erases through a sigmoid
@@ -257,6 +256,7 @@ class NTM(object):
 
           deltas['oerases'] += np.dot(dzerase, os[t].T)
 
+          # for now, content weighting affects this read through mems[t-1]
           dwc_r = np.zeros(w_rs[0].shape)
           # for every element of the weighting
           for i in range(self.N):
@@ -299,7 +299,6 @@ class NTM(object):
               dwdK_r[i,j] += softmax_grads(K_rs, i, j)
               dwdK_w[i,j] += softmax_grads(K_ws, i, j)
 
-
           # compute dK for all i in N
           # K is the evaluated cosine similarity for the i-th row of mem matrix
           dK_r = np.zeros_like(w_rs[0])
@@ -311,8 +310,6 @@ class NTM(object):
             for j in range(self.N):
               dK_r += dwc_r[j] * dwdK_r[i,j] # TODO: is order of i and j right?
               dK_w += dwc_w[j] * dwdK_w[i,j]
-
-
 
           """
           dK_r_dk_rs is a list of N things
@@ -383,6 +380,10 @@ class NTM(object):
           # and also zadd through Woadds
           do += np.dot(params['oadds'].T, dzadd)
           do += np.dot(params['oerases'].T, dzerase)
+          # and also through the keys
+          do += np.dot(params['ok_r'].T, dzk_r)
+          do += np.dot(params['ok_w'].T, dzk_w)
+
 
         # compute deriv w.r.t. pre-activation of o
         dzo = do * (1 - os[t] * os[t])

@@ -15,7 +15,7 @@ def cosine_sim(a_t, b_t):
     # denominator is the product of the norms
     anorm = np.sqrt(np.sum(a_t*a_t))
     bnorm = np.sqrt(np.sum(b_t*b_t))
-    den2 = (anorm * bnorm) + 1e-5
+    den2 = (anorm * bnorm) + 1e-20
 
     return num / den2
 
