@@ -274,8 +274,6 @@ class NTM(object):
               # and they affect mem through adding
               dwc_w[i] += dmem[t][i,j] * adds[t][j]
 
-          # dwdK_r will be an N by M that holds in the i,j-th spot
-          # the deriv of wc_r[j] w.r.t. K_r[i] (there are N Ks)
           """
           We need dw/dK
           now w has N elts and K has N elts
@@ -308,9 +306,10 @@ class NTM(object):
           for i in range(self.N):
             # for every j in N (for every elt of the weighting)
             for j in range(self.N):
-              dK_r += dwc_r[j] * dwdK_r[i,j] # TODO: is order of i and j right?
-              dK_w += dwc_w[j] * dwdK_w[i,j]
+              dK_r[i] += dwc_r[j] * dwdK_r[i,j] # TODO: is order of i and j right?
+              dK_w[i] += dwc_w[j] * dwdK_w[i,j]
 
+          # import pdb; pdb.set_trace()
           """
           dK_r_dk_rs is a list of N things
           each elt of the list corresponds to grads of K_idx
@@ -357,6 +356,7 @@ class NTM(object):
             for j in range(self.M):
               du_r[t][i,:] = dK_r[i] * dK_r_dmem[i][j]
               du_w[t][i,:] = dK_w[i] * dK_w_dmem[i][j]
+
 
           # key values are activated as tanh
           dzk_r = dk_r * (1 - k_rs[t] * k_rs[t])
