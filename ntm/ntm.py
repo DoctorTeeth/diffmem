@@ -263,15 +263,6 @@ class NTM(object):
           dwc_w = np.dot(dmem[t], adds[t])
           # they also affect memtilde[t] through erasing
           dwc_w += np.dot(np.multiply(dmemtilde[t], -mems[t-1]), erases[t])
-          """
-          replace above with dots
-          dwc_w is n,1
-          dmem is n,m
-          adds is m,1
-          so bottom should be np.dot(dmem[t], adds[t])
-          and other should be
-          np.dot(np.multiply(dmemtilde[t], -mems[t-1])), erases[t])
-          """
 
           """
           We need dw/dK
