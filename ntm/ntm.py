@@ -256,25 +256,22 @@ class NTM(object):
 
           deltas['oerases'] += np.dot(dzerase, os[t].T)
 
-          # for now, content weighting affects this read through mems[t-1]
-          # dwc_r = np.zeros(w_rs[0].shape)
-          # # for every element of the weighting
-          # for i in range(self.N):
-          #   # for every value in the read
-          #   for j in range(self.M):
-          #     dwc_r[i] += drs[t][j] * mems[t-1][i,j]
-
+          # read weights affect what is read, via what's in mems[t-1]
           dwc_r = np.dot(mems[t-1], drs[t])
 
-          dwc_w = np.zeros(w_ws[0].shape)
-          # for every element of the weighting
-          for i in range(self.N):
-            # for every column in the memory
-            for j in range(self.M):
-              # write weights affect memtilde through erasing
-              dwc_w[i] += dmemtilde[t][i,j] * (-erases[t][j] * mems[t-1][i,j])
-              # and they affect mem through adding
-              dwc_w[i] += dmem[t][i,j] * adds[t][j]
+          # write weights affect mem[t] through adding
+          dwc_w = np.dot(dmem[t], adds[t])
+          # they also affect memtilde[t] through erasing
+          dwc_w += np.dot(np.multiply(dmemtilde[t], -mems[t-1]), erases[t])
+          """
+          replace above with dots
+          dwc_w is n,1
+          dmem is n,m
+          adds is m,1
+          so bottom should be np.dot(dmem[t], adds[t])
+          and other should be
+          np.dot(np.multiply(dmemtilde[t], -mems[t-1])), erases[t])
+          """
 
           """
           We need dw/dK
