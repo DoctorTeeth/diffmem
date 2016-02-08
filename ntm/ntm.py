@@ -416,6 +416,11 @@ class NTM(object):
             print deltas[k]
             failed_keys.append(k)
           else:
+            print "compare deltas PASSED for key:", k
+            print "baseline"
+            print auto_deltas[k]
+            print "candidate"
+            print deltas[k]
             passed_keys.append(k)
         if len(failed_keys) > 0:
           print "FAILED KEYS:"

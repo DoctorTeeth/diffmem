@@ -12,7 +12,7 @@ import time
 import pdb
 
 # Comment next line to remove determinism
-np.random.seed(0)
+# np.random.seed(0)
 
 # Uncomment below for debugging numerical issues
 # warnings.simplefilter("error")
