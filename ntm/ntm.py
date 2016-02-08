@@ -343,6 +343,7 @@ class NTM(object):
           for i in range(self.N):
             # for every elt of this row (one of M)
             for j in range(self.M):
+              # TODO: next k, right?
               du_r[t][i,:] = dK_r[i] * dK_r_dmem[i][j]
               du_w[t][i,:] = dK_w[i] * dK_w_dmem[i][j]
 
