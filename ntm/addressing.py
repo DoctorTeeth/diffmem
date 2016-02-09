@@ -123,5 +123,4 @@ def create_weights(k_t, b_t, g_t, s_t, gamma_t, w_old, mem):
     Convenience function to be called from NTM fprop.
     """
     w_content = content_focus(k_t, b_t, mem)
-    return location_focus(g_t, s_t, gamma_t, w_old, w_content)
-    return w_content
+    return location_focus(g_t, s_t, gamma_t, w_old, w_content), w_content

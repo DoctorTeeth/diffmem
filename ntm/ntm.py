@@ -112,6 +112,7 @@ class NTM(object):
       k_ws, beta_ws, g_ws, s_ws, gamma_ws = l(),l(),l(),l(),l()
       adds, erases = l(),l()
       w_ws, w_rs = l(),l() # read weights and write weights
+      wc_ws, wc_rs = l(),l() # read and write content weights
       rs[-1] = self.W['rsInit'] # stores values read from memory
       w_ws[-1] = softmax(self.W['w_wsInit'])
       w_rs[-1] = softmax(self.W['w_rsInit'])
@@ -156,7 +157,7 @@ class NTM(object):
         adds[t] = np.tanh(np.dot(W['oadds'], os[t]) + W['badds'])
         erases[t] = sigmoid(np.dot(W['oerases'], os[t]) + W['berases'])
 
-        w_ws[t] = addressing.create_weights(   k_ws[t]
+        w_ws[t], wc_ws[t] = addressing.create_weights(   k_ws[t]
                                                 , beta_ws[t]
                                                 , g_ws[t]
                                                 , s_ws[t]
@@ -164,7 +165,7 @@ class NTM(object):
                                                 , w_ws[t-1]
                                                 , mems[t-1])
 
-        w_rs[t] = addressing.create_weights(   k_rs[t]
+        w_rs[t], wc_rs[t] = addressing.create_weights(   k_rs[t]
                                                 , beta_rs[t]
                                                 , g_rs[t]
                                                 , s_rs[t]
@@ -190,7 +191,7 @@ class NTM(object):
         mems[t] = memory.write(mems[t-1],w_ws[t],erases[t],adds[t])
 
       self.stats = [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs,
-                    w_ws, adds, erases, k_rs, k_ws]
+                    w_ws, adds, erases, k_rs, k_ws, g_rs, g_ws, wc_rs, wc_ws]
       return np.sum(loss)
 
     def manual_grads(params):
@@ -203,7 +204,7 @@ class NTM(object):
         deltas[key] = np.zeros_like(val)
 
       [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs,
-       w_ws, adds, erases, k_rs, k_ws] = self.stats
+       w_ws, adds, erases, k_rs, k_ws, g_rs, g_ws, wc_rs, wc_ws] = self.stats
       dd = {}
       drs = {}
       dzh = {}
@@ -211,8 +212,8 @@ class NTM(object):
       dmemtilde = {}
       du_r = {}
       du_w = {}
-      # dK_r = {}
-      # dK_w = {}
+      dwg_r = {}
+      dwg_w = {}
       for t in reversed(xrange(len(targets))):
 
         dy = np.copy(ps[t])
@@ -259,13 +260,30 @@ class NTM(object):
 
           deltas['oerases'] += np.dot(dzerase, os[t].T)
 
-          # read weights affect what is read, via what's in mems[t-1]
-          dwc_r = np.dot(mems[t-1], drs[t])
+          # # read weights affect what is read, via what's in mems[t-1]
+          # dwc_r = np.dot(mems[t-1], drs[t])
+
+          # # write weights affect mem[t] through adding
+          # dwc_w = np.dot(dmem[t], adds[t])
+          # # they also affect memtilde[t] through erasing
+          # dwc_w += np.dot(np.multiply(dmemtilde[t], -mems[t-1]), erases[t])
+
+          dw_r = np.dot(mems[t-1], drs[t])
+          dw_r += dwg_r[t+1] * (1 - g_rs[t+1])
 
           # write weights affect mem[t] through adding
-          dwc_w = np.dot(dmem[t], adds[t])
+          dw_w = np.dot(dmem[t], adds[t])
           # they also affect memtilde[t] through erasing
-          dwc_w += np.dot(np.multiply(dmemtilde[t], -mems[t-1]), erases[t])
+          dw_w += np.dot(np.multiply(dmemtilde[t], -mems[t-1]), erases[t])
+          dw_w += dwg_w[t+1] * (1 - g_ws[t+1])
+
+          dwg_r[t] = dw_r
+          dwg_w[t] = dw_w
+
+          # import pdb; pdb.set_trace()
+          dwc_r = dwg_r[t] * g_rs[t]
+          dwc_w = dwg_w[t] * g_ws[t]
+
 
           """
           We need dw/dK
@@ -299,7 +317,7 @@ class NTM(object):
           for i in range(self.N):
             # for every j in N (for every elt of the weighting)
             for j in range(self.N):
-              dK_r[i] += dwc_r[j] * dwdK_r[i,j] # TODO: is order of i and j right?
+              dK_r[i] += dwc_r[j] * dwdK_r[i,j] 
               dK_w[i] += dwc_w[j] * dwdK_w[i,j]
 
           """
@@ -353,11 +371,8 @@ class NTM(object):
           for i in range(self.N):
             # for every elt of this row (one of M)
             for j in range(self.M):
-              # TODO: next k, right?
               du_r[t][i,j] = dK_r[i] * dK_r_dmem[i][j]
               du_w[t][i,j] = dK_w[i] * dK_w_dmem[i][j]
-          # import pdb; pdb.set_trace()
-          # TODO: within a row, all columns in du_r are the same - why?
 
           # key values are activated as tanh
           dzk_r = dk_r * (1 - k_rs[t] * k_rs[t])
@@ -369,11 +384,26 @@ class NTM(object):
           deltas['bk_r'] += dzk_r
           deltas['bk_w'] += dzk_w
 
+          dg_r = np.dot(dwg_r[t].T, (wc_rs[t] - w_rs[t-1]) )
+          dg_w = np.dot(dwg_w[t].T, (wc_ws[t] - w_ws[t-1]) )
+
+          # compute dzg_r, dzg_w
+          dzg_r = dg_r * (g_rs[t] * (1 - g_rs[t]))
+          dzg_w = dg_w * (g_ws[t] * (1 - g_ws[t]))
+
+          deltas['og_r'] += np.dot(dzg_r, os[t].T)
+          deltas['og_w'] += np.dot(dzg_w, os[t].T)
+
+          deltas['bg_r'] += dzg_r
+          deltas['bg_w'] += dzg_w
+
         else:
           drs[t] = np.zeros_like(rs[0])
           dmemtilde[t] = np.zeros_like(mems[0])
           du_r[t] = np.zeros_like(mems[0])
           du_w[t] = np.zeros_like(mems[0])
+          dwg_r[t] = np.zeros_like(w_rs[0])
+          dwg_w[t] = np.zeros_like(w_ws[0])
 
         # o affects y through Woy
         do = np.dot(params['oy'].T, dy)
@@ -384,6 +414,9 @@ class NTM(object):
           # and also through the keys
           do += np.dot(params['ok_r'].T, dzk_r)
           do += np.dot(params['ok_w'].T, dzk_w)
+          # and also through the interpolators
+          do += np.dot(params['og_r'].T, dzg_r)
+          do += np.dot(params['og_w'].T, dzg_w)
 
 
         # compute deriv w.r.t. pre-activation of o
@@ -446,6 +479,6 @@ class NTM(object):
 
     deltas = bprop(self.W, manual_grad)
     [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs,
-     w_ws, adds, erases, k_rs, k_ws] = map(unwrap, self.stats)
+     w_ws, adds, erases, k_rs, k_ws, g_rs, g_ws, wc_rs, wc_ws] = map(unwrap, self.stats)
 
     return loss, deltas, ps, w_rs, w_ws, adds, erases
