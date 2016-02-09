@@ -202,7 +202,8 @@ class NTM(object):
       for key, val in params.iteritems():
         deltas[key] = np.zeros_like(val)
 
-      loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases, k_rs, k_ws = self.stats
+      [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs,
+       w_ws, adds, erases, k_rs, k_ws] = self.stats
       dd = {}
       drs = {}
       dzh = {}
@@ -210,6 +211,8 @@ class NTM(object):
       dmemtilde = {}
       du_r = {}
       du_w = {}
+      # dK_r = {}
+      # dK_w = {}
       for t in reversed(xrange(len(targets))):
 
         dy = np.copy(ps[t])
@@ -337,6 +340,13 @@ class NTM(object):
               dk_w[i] += dK_w[j] * dK_w_dk_ws[j][i]
 
           # these represent influence of mem on next K
+          """
+          Let's let du_r[t] represent the
+          influence of mems[t-1] on the cost through the K values
+          this is analogous to dk_w, but, k only every affects that
+          whereas mems[t-1] will also affect what is read at time t+1
+          and through memtilde at time t+1
+          """
           du_r[t] = np.zeros_like(mems[0])
           du_w[t] = np.zeros_like(mems[0])
           # for every row in mems[t-1]
@@ -344,8 +354,10 @@ class NTM(object):
             # for every elt of this row (one of M)
             for j in range(self.M):
               # TODO: next k, right?
-              du_r[t][i,:] = dK_r[i] * dK_r_dmem[i][j]
-              du_w[t][i,:] = dK_w[i] * dK_w_dmem[i][j]
+              du_r[t][i,j] = dK_r[i] * dK_r_dmem[i][j]
+              du_w[t][i,j] = dK_w[i] * dK_w_dmem[i][j]
+          # import pdb; pdb.set_trace()
+          # TODO: within a row, all columns in du_r are the same - why?
 
           # key values are activated as tanh
           dzk_r = dk_r * (1 - k_rs[t] * k_rs[t])
@@ -417,11 +429,6 @@ class NTM(object):
             print deltas[k]
             failed_keys.append(k)
           else:
-            print "compare deltas PASSED for key:", k
-            print "baseline"
-            print auto_deltas[k]
-            print "candidate"
-            print deltas[k]
             passed_keys.append(k)
         if len(failed_keys) > 0:
           print "FAILED KEYS:"
@@ -438,6 +445,7 @@ class NTM(object):
       return deltas
 
     deltas = bprop(self.W, manual_grad)
-    loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs, w_ws, adds, erases = map(unwrap, self.stats)
+    [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs,
+     w_ws, adds, erases, k_rs, k_ws] = map(unwrap, self.stats)
 
     return loss, deltas, ps, w_rs, w_ws, adds, erases
