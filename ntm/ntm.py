@@ -3,8 +3,8 @@ This module implements a neural turing machine.
 """
 import math
 import autograd.numpy as np
-from autograd import grad
-from util.util import rando, sigmoid, softmax, softplus, unwrap, sigmoid_prime, tanh_prime, compare_deltas, dKdu, softmax_grads
+from autograd import grad, jacobian
+from util.util import rando, sigmoid, softmax, softplus, unwrap, sigmoid_prime, tanh_prime, compare_deltas, dKdu, softmax_grads, beta_grads, K_focus
 import memory
 import addressing
 from addressing import cosine_sim
@@ -107,10 +107,11 @@ class NTM(object):
         return {}
 
       rs = l()
-      zk_rs = l()
+      zk_rs = l() # TODO: why only z for ks?
       k_rs, beta_rs, g_rs, s_rs, gamma_rs = l(),l(),l(),l(),l()
       k_ws, beta_ws, g_ws, s_ws, gamma_ws = l(),l(),l(),l(),l()
       adds, erases = l(),l()
+      zbeta_rs, zbeta_ws = l(),l()
       w_ws, w_rs = l(),l() # read weights and write weights
       wc_ws, wc_rs = l(),l() # read and write content weights
       rs[-1] = self.W['rsInit'] # stores values read from memory
@@ -135,8 +136,8 @@ class NTM(object):
         # parameters to the read head
         zk_rs[t] =np.dot(W['ok_r'],os[t]) + W['bk_r']
         k_rs[t] = np.tanh(zk_rs[t])
-        beta_rs[t] = softplus(np.dot(W['obeta_r'],os[t])
-                                    + W['bbeta_r'])
+        zbeta_rs[t] = np.dot(W['obeta_r'],os[t]) + W['bbeta_r']
+        beta_rs[t] = softplus(zbeta_rs[t])
         g_rs[t] = sigmoid(np.dot(W['og_r'],os[t]) + W['bg_r'])
         s_rs[t] = softmax(np.dot(W['os_r'],os[t]) + W['bs_r'])
         gamma_rs[t] = 1 + sigmoid(np.dot(W['ogamma_r'], os[t])
@@ -144,8 +145,8 @@ class NTM(object):
 
         # parameters to the write head
         k_ws[t] = np.tanh(np.dot(W['ok_w'],os[t]) + W['bk_w'])
-        beta_ws[t] = softplus(np.dot(W['obeta_w'], os[t])
-                                    + W['bbeta_w'])
+        zbeta_ws[t] = np.dot(W['obeta_w'],os[t]) + W['bbeta_w']
+        beta_ws[t] = softplus(zbeta_ws[t])
         g_ws[t] = sigmoid(np.dot(W['og_w'],os[t]) + W['bg_w'])
         s_ws[t] = softmax(np.dot(W['os_w'],os[t]) + W['bs_w'])
         gamma_ws[t] = 1 + sigmoid(np.dot(W['ogamma_w'], os[t])
@@ -191,7 +192,8 @@ class NTM(object):
         mems[t] = memory.write(mems[t-1],w_ws[t],erases[t],adds[t])
 
       self.stats = [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs,
-                    w_ws, adds, erases, k_rs, k_ws, g_rs, g_ws, wc_rs, wc_ws]
+                    w_ws, adds, erases, k_rs, k_ws, g_rs, g_ws, wc_rs, wc_ws,
+                    zbeta_rs, zbeta_ws]
       return np.sum(loss)
 
     def manual_grads(params):
@@ -204,7 +206,8 @@ class NTM(object):
         deltas[key] = np.zeros_like(val)
 
       [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs,
-       w_ws, adds, erases, k_rs, k_ws, g_rs, g_ws, wc_rs, wc_ws] = self.stats
+       w_ws, adds, erases, k_rs, k_ws, g_rs, g_ws, wc_rs, wc_ws,
+       zbeta_rs, zbeta_ws] = self.stats
       dd = {}
       drs = {}
       dzh = {}
@@ -305,8 +308,8 @@ class NTM(object):
           for i in range(self.N):
             # for every element in the weighting
             for j in range(self.N):
-              dwdK_r[i,j] += softmax_grads(K_rs, i, j)
-              dwdK_w[i,j] += softmax_grads(K_ws, i, j)
+              dwdK_r[i,j] += softmax_grads(K_rs, softplus(zbeta_rs[t]), i, j)
+              dwdK_w[i,j] += softmax_grads(K_ws, softplus(zbeta_ws[t]), i, j)
 
           # compute dK for all i in N
           # K is the evaluated cosine similarity for the i-th row of mem matrix
@@ -317,6 +320,7 @@ class NTM(object):
           for i in range(self.N):
             # for every j in N (for every elt of the weighting)
             for j in range(self.N):
+              # specifically, dwdK_r will change, and for write as well
               dK_r[i] += dwc_r[j] * dwdK_r[i,j] 
               dK_w[i] += dwc_w[j] * dwdK_w[i,j]
 
@@ -397,6 +401,32 @@ class NTM(object):
           deltas['bg_r'] += dzg_r
           deltas['bg_w'] += dzg_w
 
+          # compute dbeta, which affects w_content through interaction with Ks
+
+          dwcdbeta_r = np.zeros_like(w_rs[0])
+          dwcdbeta_w = np.zeros_like(w_ws[0])
+          for i in range(self.N):
+            dwcdbeta_r[i] = beta_grads(K_rs, softplus(zbeta_rs[t]), i)
+            dwcdbeta_w[i] = beta_grads(K_ws, softplus(zbeta_ws[t]), i)
+
+          # import pdb; pdb.set_trace()
+          dbeta_r = np.zeros_like(zbeta_rs[0])
+          dbeta_w = np.zeros_like(zbeta_ws[0])
+          for i in range(self.N):
+            dbeta_r[0] += dwc_r[i] * dwcdbeta_r[i]
+            dbeta_w[0] += dwc_w[i] * dwcdbeta_w[i]
+
+
+          # beta is activated from zbeta by softplus, grad of which is sigmoid
+          dzbeta_r = dbeta_r * sigmoid(zbeta_rs[t])
+          dzbeta_w = dbeta_w * sigmoid(zbeta_ws[t])
+
+          deltas['obeta_r'] += np.dot(dzbeta_r, os[t].T)
+          deltas['obeta_w'] += np.dot(dzbeta_w, os[t].T)
+
+          deltas['bbeta_r'] += dzbeta_r
+          deltas['bbeta_w'] += dzbeta_w
+
         else:
           drs[t] = np.zeros_like(rs[0])
           dmemtilde[t] = np.zeros_like(mems[0])
@@ -417,6 +447,9 @@ class NTM(object):
           # and also through the interpolators
           do += np.dot(params['og_r'].T, dzg_r)
           do += np.dot(params['og_w'].T, dzg_w)
+          # and also through beta
+          do += np.dot(params['obeta_r'].T, dzbeta_r)
+          do += np.dot(params['obeta_w'].T, dzbeta_w)
 
 
         # compute deriv w.r.t. pre-activation of o
@@ -479,6 +512,7 @@ class NTM(object):
 
     deltas = bprop(self.W, manual_grad)
     [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs,
-     w_ws, adds, erases, k_rs, k_ws, g_rs, g_ws, wc_rs, wc_ws] = map(unwrap, self.stats)
+     w_ws, adds, erases, k_rs, k_ws, g_rs, g_ws, wc_rs, wc_ws,
+     zbeta_rs, zbeta_ws] = map(unwrap, self.stats)
 
     return loss, deltas, ps, w_rs, w_ws, adds, erases

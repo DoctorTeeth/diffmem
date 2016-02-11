@@ -234,14 +234,54 @@ def dKdu(u, v):
   c = cosine_sim(u,v)
   return a - b*c
 
-def softmax_grads(Ks, i, j):
+def softmax_grads(Ks, beta, i, j):
   """
   return the grad of the ith element of weighting w.r.t. j-th element of Ks
   """
   if j == i:
-    num = np.exp(Ks[i]) * (np.sum(np.exp(Ks)) - np.exp(Ks[i]))
+    num = beta*np.exp(Ks[i]*beta) * (np.sum(np.exp(Ks*beta)) - np.exp(Ks[i]*beta))
   else:
-    num = -np.exp(Ks[i] + Ks[j])
-  den1 = np.sum(np.exp(Ks))
+    num = -beta*np.exp(Ks[i]*beta + Ks[j]*beta)
+  den1 = np.sum(np.exp(Ks*beta))
   return num / (den1 * den1)
 
+def beta_grads(Ks, beta, i):
+  Karr = np.array(Ks)
+  anum = Ks[i] * np.exp(Ks[i] * beta)
+  aden = np.sum(np.exp(beta * Karr))
+  a = anum / aden
+
+  bnum = np.exp(Ks[i] * beta) * (np.sum(np.multiply(Karr, np.exp(Karr * beta))))
+  bden = aden * aden
+  b = bnum / bden
+  return a - b
+
+def K_focus(Ks, b_t):
+    """
+    The content-addressing method described in 3.3.1.
+    Specifically, this is equations (5) and (6).
+    k_t is the similarity key vector.
+    b_t is the similarity key strength.
+    memObject is a ref to our NTM memory object.
+    """
+    def F(K):
+        """
+        Given the key vector k_t, compute our sim
+        function between k_t and u and exponentiate.
+        """
+        return np.exp(b_t * K)
+
+    # Apply above function to every row in the matrix
+    # This is surely much slower than it needs to be
+    l = []
+    for K in Ks:
+        l.append(F(K))
+
+    # Return the normalized similarity weights
+    # This is essentially a softmax over the similarities
+        # with an extra degree of freedom parametrized by b_t
+    sims = np.array(l)
+
+    n = sims
+    d = np.sum(sims)
+    return n/d
