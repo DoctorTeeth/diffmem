@@ -7,7 +7,7 @@ from autograd import grad, jacobian
 from util.util import rando, sigmoid, softmax, softplus, unwrap, sigmoid_prime, tanh_prime, compare_deltas, dKdu, softmax_grads, beta_grads, K_focus
 import memory
 import addressing
-from addressing import cosine_sim
+from addressing import cosine_sim, shift
 import sys
 
 class NTM(object):
@@ -112,6 +112,8 @@ class NTM(object):
       k_ws, beta_ws, g_ws, s_ws, gamma_ws = l(),l(),l(),l(),l()
       adds, erases = l(),l()
       zbeta_rs, zbeta_ws = l(),l()
+      zs_rs, zs_ws = l(),l()
+      wg_rs, wg_ws = l(),l()
       w_ws, w_rs = l(),l() # read weights and write weights
       wc_ws, wc_rs = l(),l() # read and write content weights
       rs[-1] = self.W['rsInit'] # stores values read from memory
@@ -139,7 +141,8 @@ class NTM(object):
         zbeta_rs[t] = np.dot(W['obeta_r'],os[t]) + W['bbeta_r']
         beta_rs[t] = softplus(zbeta_rs[t])
         g_rs[t] = sigmoid(np.dot(W['og_r'],os[t]) + W['bg_r'])
-        s_rs[t] = softmax(np.dot(W['os_r'],os[t]) + W['bs_r'])
+        zs_rs[t] = np.dot(W['os_r'],os[t]) + W['bs_r']
+        s_rs[t] = softmax(zs_rs[t])
         gamma_rs[t] = 1 + sigmoid(np.dot(W['ogamma_r'], os[t])
                                         + W['bgamma_r'])
 
@@ -148,7 +151,8 @@ class NTM(object):
         zbeta_ws[t] = np.dot(W['obeta_w'],os[t]) + W['bbeta_w']
         beta_ws[t] = softplus(zbeta_ws[t])
         g_ws[t] = sigmoid(np.dot(W['og_w'],os[t]) + W['bg_w'])
-        s_ws[t] = softmax(np.dot(W['os_w'],os[t]) + W['bs_w'])
+        zs_ws[t] = np.dot(W['os_w'],os[t]) + W['bs_w']
+        s_ws[t] = softmax(zs_ws[t])
         gamma_ws[t] = 1 + sigmoid(np.dot(W['ogamma_w'], os[t])
                                         + W['bgamma_w'])
 
@@ -158,7 +162,7 @@ class NTM(object):
         adds[t] = np.tanh(np.dot(W['oadds'], os[t]) + W['badds'])
         erases[t] = sigmoid(np.dot(W['oerases'], os[t]) + W['berases'])
 
-        w_ws[t], wc_ws[t] = addressing.create_weights(   k_ws[t]
+        w_ws[t], wg_ws[t], wc_ws[t] = addressing.create_weights(   k_ws[t]
                                                 , beta_ws[t]
                                                 , g_ws[t]
                                                 , s_ws[t]
@@ -166,7 +170,7 @@ class NTM(object):
                                                 , w_ws[t-1]
                                                 , mems[t-1])
 
-        w_rs[t], wc_rs[t] = addressing.create_weights(   k_rs[t]
+        w_rs[t], wg_rs[t], wc_rs[t] = addressing.create_weights(   k_rs[t]
                                                 , beta_rs[t]
                                                 , g_rs[t]
                                                 , s_rs[t]
@@ -193,7 +197,7 @@ class NTM(object):
 
       self.stats = [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs,
                     w_ws, adds, erases, k_rs, k_ws, g_rs, g_ws, wc_rs, wc_ws,
-                    zbeta_rs, zbeta_ws]
+                    zbeta_rs, zbeta_ws, zs_rs, zs_ws, wg_rs, wg_ws]
       return np.sum(loss)
 
     def manual_grads(params):
@@ -207,7 +211,7 @@ class NTM(object):
 
       [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs,
        w_ws, adds, erases, k_rs, k_ws, g_rs, g_ws, wc_rs, wc_ws,
-       zbeta_rs, zbeta_ws] = self.stats
+       zbeta_rs, zbeta_ws, zs_rs, zs_ws, wg_rs, wg_ws] = self.stats
       dd = {}
       drs = {}
       dzh = {}
@@ -280,10 +284,20 @@ class NTM(object):
           dw_w += np.dot(np.multiply(dmemtilde[t], -mems[t-1]), erases[t])
           dw_w += dwg_w[t+1] * (1 - g_ws[t+1])
 
-          dwg_r[t] = dw_r
-          dwg_w[t] = dw_w
+          # shift_grad_s_r = shift_grad_s(wg_rs[t], softmax(zs_rs[t]))
+          shift_grad_wg = jacobian(shift, argnum=0)
+          shift_grad_wg_r = np.reshape(shift_grad_wg(wg_rs[t], softmax(zs_rs[t])),
+                                       (self.N, self.N))
+          shift_grad_wg_w = np.reshape(shift_grad_wg(wg_ws[t], softmax(zs_ws[t])),
+                                       (self.N, self.N))
 
-          # import pdb; pdb.set_trace()
+          # right now, shifted weights are final weight
+          dws_r= dw_r
+          dws_w= dw_r
+
+          dwg_r[t] = np.dot(shift_grad_wg_r, dws_r)
+          dwg_w[t] = np.dot(shift_grad_wg_w, dws_w)
+
           dwc_r = dwg_r[t] * g_rs[t]
           dwc_w = dwg_w[t] * g_ws[t]
 
@@ -416,7 +430,6 @@ class NTM(object):
             dbeta_r[0] += dwc_r[i] * dwcdbeta_r[i]
             dbeta_w[0] += dwc_w[i] * dwcdbeta_w[i]
 
-
           # beta is activated from zbeta by softplus, grad of which is sigmoid
           dzbeta_r = dbeta_r * sigmoid(zbeta_rs[t])
           dzbeta_w = dbeta_w * sigmoid(zbeta_ws[t])
@@ -426,6 +439,28 @@ class NTM(object):
 
           deltas['bbeta_r'] += dzbeta_r
           deltas['bbeta_w'] += dzbeta_w
+
+          shift_grad_s = jacobian(shift, argnum=1)
+          shift_grad_s_r = np.reshape(shift_grad_s(wg_rs[t], softmax(zs_rs[t])),
+                                      (self.N, 3))
+          shift_grad_s_w = np.reshape(shift_grad_s(wg_ws[t], softmax(zs_ws[t])),
+                                      (self.N, 3))
+
+          ds_r = np.dot(shift_grad_s_r.T, dwc_r)
+          ds_w = np.dot(shift_grad_s_w.T, dwc_w)
+
+          shift_act_grad = jacobian(softmax, argnum=0)
+          shift_act_jac_r = np.reshape(shift_act_grad(zs_rs[t]), (3,3))
+          shift_act_jac_w = np.reshape(shift_act_grad(zs_ws[t]), (3,3))
+
+          dzs_r = np.dot(shift_act_jac_r, ds_r)
+          dzs_w = np.dot(shift_act_jac_w, ds_w)
+
+          deltas['os_r'] += np.dot(dzs_r, os[t].T)
+          deltas['os_w'] += np.dot(dzs_w, os[t].T)
+
+          deltas['bs_r'] += dzs_r
+          deltas['bs_w'] += dzs_w
 
         else:
           drs[t] = np.zeros_like(rs[0])
@@ -450,6 +485,9 @@ class NTM(object):
           # and also through beta
           do += np.dot(params['obeta_r'].T, dzbeta_r)
           do += np.dot(params['obeta_w'].T, dzbeta_w)
+          # and also through the shift values
+          do += np.dot(params['os_r'].T, dzs_r)
+          do += np.dot(params['os_w'].T, dzs_w)
 
 
         # compute deriv w.r.t. pre-activation of o
@@ -513,6 +551,6 @@ class NTM(object):
     deltas = bprop(self.W, manual_grad)
     [loss, mems, ps, ys, os, zos, hs, zhs, xs, rs, w_rs,
      w_ws, adds, erases, k_rs, k_ws, g_rs, g_ws, wc_rs, wc_ws,
-     zbeta_rs, zbeta_ws] = map(unwrap, self.stats)
+     zbeta_rs, zbeta_ws, zs_rs, zs_ws, wg_rs, wg_ws] = map(unwrap, self.stats)
 
     return loss, deltas, ps, w_rs, w_ws, adds, erases
