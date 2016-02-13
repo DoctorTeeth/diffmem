@@ -292,7 +292,7 @@ class NTM(object):
 
           # right now, shifted weights are final weight
           dws_r = dw_r
-          dws_w = dw_r
+          dws_w = dw_w
 
           dwg_r[t] = np.dot(shift_grad_wg_r.T, dws_r)
           dwg_w[t] = np.dot(shift_grad_wg_w.T, dws_w)
@@ -452,8 +452,8 @@ class NTM(object):
           shift_act_jac_r = np.reshape(shift_act_grad(zs_rs[t]), (3,3))
           shift_act_jac_w = np.reshape(shift_act_grad(zs_ws[t]), (3,3))
 
-          dzs_r = np.dot(shift_act_jac_r, ds_r)
-          dzs_w = np.dot(shift_act_jac_w, ds_w)
+          dzs_r = np.dot(shift_act_jac_r.T, ds_r)
+          dzs_w = np.dot(shift_act_jac_w.T, ds_w)
 
           deltas['os_r'] += np.dot(dzs_r, os[t].T)
           deltas['os_w'] += np.dot(dzs_w, os[t].T)
