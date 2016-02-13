@@ -445,8 +445,8 @@ class NTM(object):
                                       (self.N, 3))
 
           # import pdb; pdb.set_trace()
-          ds_r = np.dot(shift_grad_s_r.T, dwc_r)
-          ds_w = np.dot(shift_grad_s_w.T, dwc_w)
+          ds_r = np.dot(shift_grad_s_r.T, dws_r)
+          ds_w = np.dot(shift_grad_s_w.T, dws_w)
 
           shift_act_grad = jacobian(softmax, argnum=0)
           shift_act_jac_r = np.reshape(shift_act_grad(zs_rs[t]), (3,3))

@@ -116,7 +116,7 @@ def location_focus(g_t, s_t, gamma_t, w_old, w_content):
     # w_t = pows / np.sum(pows)
 
     # return w_t
-    # TODO: is w_gt unchanged through all this?
+    # w_gt is unchanged through all this - i checked (shouldn't have to though)
     return w_tp, w_gt
 
 def create_weights(k_t, b_t, g_t, s_t, gamma_t, w_old, mem):
