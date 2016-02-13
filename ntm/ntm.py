@@ -107,7 +107,7 @@ class NTM(object):
         return {}
 
       rs = l()
-      zk_rs = l() # TODO: why only z for ks?
+      zk_rs = l() 
       k_rs, beta_rs, g_rs, s_rs, gamma_rs = l(),l(),l(),l(),l()
       k_ws, beta_ws, g_ws, s_ws, gamma_ws = l(),l(),l(),l(),l()
       adds, erases = l(),l()
@@ -284,7 +284,6 @@ class NTM(object):
           dw_w += np.dot(np.multiply(dmemtilde[t], -mems[t-1]), erases[t])
           dw_w += dwg_w[t+1] * (1 - g_ws[t+1])
 
-          # shift_grad_s_r = shift_grad_s(wg_rs[t], softmax(zs_rs[t]))
           shift_grad_wg = jacobian(shift, argnum=0)
           shift_grad_wg_r = np.reshape(shift_grad_wg(wg_rs[t], softmax(zs_rs[t])),
                                        (self.N, self.N))
@@ -292,11 +291,11 @@ class NTM(object):
                                        (self.N, self.N))
 
           # right now, shifted weights are final weight
-          dws_r= dw_r
-          dws_w= dw_r
+          dws_r = dw_r
+          dws_w = dw_r
 
-          dwg_r[t] = np.dot(shift_grad_wg_r, dws_r)
-          dwg_w[t] = np.dot(shift_grad_wg_w, dws_w)
+          dwg_r[t] = np.dot(shift_grad_wg_r.T, dws_r)
+          dwg_w[t] = np.dot(shift_grad_wg_w.T, dws_w)
 
           dwc_r = dwg_r[t] * g_rs[t]
           dwc_w = dwg_w[t] * g_ws[t]
@@ -423,7 +422,6 @@ class NTM(object):
             dwcdbeta_r[i] = beta_grads(K_rs, softplus(zbeta_rs[t]), i)
             dwcdbeta_w[i] = beta_grads(K_ws, softplus(zbeta_ws[t]), i)
 
-          # import pdb; pdb.set_trace()
           dbeta_r = np.zeros_like(zbeta_rs[0])
           dbeta_w = np.zeros_like(zbeta_ws[0])
           for i in range(self.N):
@@ -446,6 +444,7 @@ class NTM(object):
           shift_grad_s_w = np.reshape(shift_grad_s(wg_ws[t], softmax(zs_ws[t])),
                                       (self.N, 3))
 
+          # import pdb; pdb.set_trace()
           ds_r = np.dot(shift_grad_s_r.T, dwc_r)
           ds_w = np.dot(shift_grad_s_w.T, dwc_w)
 
@@ -533,6 +532,11 @@ class NTM(object):
             print deltas[k]
             failed_keys.append(k)
           else:
+            print "compare deltas PASSED for key:", k
+            print "baseline"
+            print auto_deltas[k]
+            print "candidate"
+            print deltas[k]
             passed_keys.append(k)
         if len(failed_keys) > 0:
           print "FAILED KEYS:"
