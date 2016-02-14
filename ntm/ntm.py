@@ -284,18 +284,23 @@ class NTM(object):
           dw_w += np.dot(np.multiply(dmemtilde[t], -mems[t-1]), erases[t])
           dw_w += dwg_w[t+1] * (1 - g_ws[t+1])
 
-          shift_grad_wg = jacobian(shift, argnum=0)
-          shift_grad_wg_r = np.reshape(shift_grad_wg(wg_rs[t], softmax(zs_rs[t])),
-                                       (self.N, self.N))
-          shift_grad_wg_w = np.reshape(shift_grad_wg(wg_ws[t], softmax(zs_ws[t])),
-                                       (self.N, self.N))
+          sgwr = np.zeros((self.N, self.N))
+          sgww = np.zeros((self.N, self.N))
+          for i in range(self.N):
+            sgwr[i,i] = softmax(zs_rs[t])[0]
+            sgwr[i,(i+1) % self.N] = softmax(zs_rs[t])[2]
+            sgwr[i,(i-1) % self.N] = softmax(zs_rs[t])[1]
+
+            sgww[i,i] = softmax(zs_ws[t])[0]
+            sgww[i,(i+1) % self.N] = softmax(zs_ws[t])[2]
+            sgww[i,(i-1) % self.N] = softmax(zs_ws[t])[1]
 
           # right now, shifted weights are final weight
           dws_r = dw_r
           dws_w = dw_w
 
-          dwg_r[t] = np.dot(shift_grad_wg_r.T, dws_r)
-          dwg_w[t] = np.dot(shift_grad_wg_w.T, dws_w)
+          dwg_r[t] = np.dot(sgwr.T, dws_r)
+          dwg_w[t] = np.dot(sgww.T, dws_w)
 
           dwc_r = dwg_r[t] * g_rs[t]
           dwc_w = dwg_w[t] * g_ws[t]
