@@ -438,15 +438,25 @@ class NTM(object):
           deltas['bbeta_r'] += dzbeta_r
           deltas['bbeta_w'] += dzbeta_w
 
-          shift_grad_s = jacobian(shift, argnum=1)
-          shift_grad_s_r = np.reshape(shift_grad_s(wg_rs[t], softmax(zs_rs[t])),
-                                      (self.N, 3))
-          shift_grad_s_w = np.reshape(shift_grad_s(wg_ws[t], softmax(zs_ws[t])),
-                                      (self.N, 3))
+          # shift_grad_s = jacobian(shift, argnum=1)
+          # shift_grad_s_r = np.reshape(shift_grad_s(wg_rs[t], softmax(zs_rs[t])),
+          #                             (self.N, 3))
+          # shift_grad_s_w = np.reshape(shift_grad_s(wg_ws[t], softmax(zs_ws[t])),
+          #                             (self.N, 3))
 
-          # import pdb; pdb.set_trace()
-          ds_r = np.dot(shift_grad_s_r.T, dws_r)
-          ds_w = np.dot(shift_grad_s_w.T, dws_w)
+          sgsr = np.zeros((self.N, 3))
+          sgsw = np.zeros((self.N, 3))
+          for i in range(self.N):
+            sgsr[i,1] = wg_rs[t][(i - 1) % self.N]
+            sgsr[i,0] = wg_rs[t][i]
+            sgsr[i,2] = wg_rs[t][(i + 1) % self.N]
+
+            sgsw[i,1] = wg_ws[t][(i - 1) % self.N]
+            sgsw[i,0] = wg_ws[t][i]
+            sgsw[i,2] = wg_ws[t][(i + 1) % self.N]
+
+          ds_r = np.dot(sgsr.T, dws_r)
+          ds_w = np.dot(sgsw.T, dws_w)
 
           shift_act_jac_r = np.zeros((3,3))
           shift_act_jac_w = np.zeros((3,3))
