@@ -438,12 +438,6 @@ class NTM(object):
           deltas['bbeta_r'] += dzbeta_r
           deltas['bbeta_w'] += dzbeta_w
 
-          # shift_grad_s = jacobian(shift, argnum=1)
-          # shift_grad_s_r = np.reshape(shift_grad_s(wg_rs[t], softmax(zs_rs[t])),
-          #                             (self.N, 3))
-          # shift_grad_s_w = np.reshape(shift_grad_s(wg_ws[t], softmax(zs_ws[t])),
-          #                             (self.N, 3))
-
           sgsr = np.zeros((self.N, 3))
           sgsw = np.zeros((self.N, 3))
           for i in range(self.N):
