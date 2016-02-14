@@ -448,9 +448,13 @@ class NTM(object):
           ds_r = np.dot(shift_grad_s_r.T, dws_r)
           ds_w = np.dot(shift_grad_s_w.T, dws_w)
 
-          shift_act_grad = jacobian(softmax, argnum=0)
-          shift_act_jac_r = np.reshape(shift_act_grad(zs_rs[t]), (3,3))
-          shift_act_jac_w = np.reshape(shift_act_grad(zs_ws[t]), (3,3))
+          shift_act_jac_r = np.zeros((3,3))
+          shift_act_jac_w = np.zeros((3,3))
+          bf = np.array([[1.0]])
+          for i in range(3):
+            for j in range(3):
+              shift_act_jac_r[i,j] = softmax_grads(zs_rs[t], bf, i, j)
+              shift_act_jac_w[i,j] = softmax_grads(zs_ws[t], bf, i, j)
 
           dzs_r = np.dot(shift_act_jac_r.T, ds_r)
           dzs_w = np.dot(shift_act_jac_w.T, ds_w)
