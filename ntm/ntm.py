@@ -531,34 +531,34 @@ class NTM(object):
         # compute gradients manually
         fprop(params)
         deltas = manual_grads(params)
-        f = grad(fprop)
-        auto_deltas = f(params)
-        failed_keys = []
-        passed_keys = []
-        for k in auto_deltas.keys():
-          rval = compare_deltas(baseline=auto_deltas[k], candidate=deltas[k])
-          if not rval:
-            print "compare deltas FAILED for key:", k
-            print "baseline"
-            print auto_deltas[k]
-            print "candidate"
-            print deltas[k]
-            failed_keys.append(k)
-          else:
-            print "compare deltas PASSED for key:", k
-            print "baseline"
-            print auto_deltas[k]
-            print "candidate"
-            print deltas[k]
-            passed_keys.append(k)
-        if len(failed_keys) > 0:
-          print "FAILED KEYS:"
-          for k in failed_keys:
-            print k
-          print "PASSED KEYS:"
-          for k in passed_keys:
-            print k
-          sys.exit(1)
+        # f = grad(fprop)
+        # auto_deltas = f(params)
+        # failed_keys = []
+        # passed_keys = []
+        # for k in auto_deltas.keys():
+        #   rval = compare_deltas(baseline=auto_deltas[k], candidate=deltas[k])
+        #   if not rval:
+        #     print "compare deltas FAILED for key:", k
+        #     print "baseline"
+        #     print auto_deltas[k]
+        #     print "candidate"
+        #     print deltas[k]
+        #     failed_keys.append(k)
+        #   else:
+        #     print "compare deltas PASSED for key:", k
+        #     print "baseline"
+        #     print auto_deltas[k]
+        #     print "candidate"
+        #     print deltas[k]
+        #     passed_keys.append(k)
+        # if len(failed_keys) > 0:
+        #   print "FAILED KEYS:"
+        #   for k in failed_keys:
+        #     print k
+        #   print "PASSED KEYS:"
+        #   for k in passed_keys:
+        #     print k
+        #   sys.exit(1)
       else:
         # compute gradients automatically
         f = grad(fprop)

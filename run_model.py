@@ -86,7 +86,7 @@ optimizer = RMSProp(model.W)
 n = 0 # counts the number of sequences trained on
 bpc = None # keeps track of trailing bpc (cost)
 
-while n < 10:
+while n < 10000:
 
   i, t, seq_len = seq.make()
   inputs = np.matrix(i)
