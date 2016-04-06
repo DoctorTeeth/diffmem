@@ -15,7 +15,7 @@ def gradCheck(model, deltas, inputs, targets, epsilon, tolerance):
   diffs = getDiffs(model, deltas, inputs, targets, epsilon)
   answer = True
 
-  for diffTensor, name, delta in zip(diffs, model.names, deltas):
+  for diffTensor, name, delta in zip(diffs, model.W.keys(), deltas.values()):
 
     if np.abs(diffTensor.max()) >= tolerance:
       print "DIFF CHECK FAILS FOR TENSOR: ", name
@@ -41,33 +41,32 @@ def getDiffs(model, deltas, inputs, targets, epsilon):
   """
 
   diff_tensors = []
-  for D in deltas:
+  for D in deltas.values():
     diff_tensors.append(np.zeros_like(D))
 
-  for W,D,diffs in zip(model.weights, deltas, diff_tensors):
+  for W,D,diffs in zip(model.W.values(), deltas.values(), diff_tensors):
   # for each weight tensor in our model
 
-    for i in range(W.shape[0]):
-      for j in range(W.shape[1]):
-        # for each weight in that tensor
+    i = np.random.randint(W.shape[0])
+    j = np.random.randint(W.shape[1])
 
-        # compute f(x+h) for that weight
-        W[i,j] += epsilon
-        loss, _, _, _, _, _, _  = model.lossFun(inputs, targets, False)
-        loss_plus = np.sum(loss)
+    # compute f(x+h) for that weight
+    W[i,j] += epsilon
+    loss, _, _, _, _, _, _  = model.lossFun(inputs, targets, False)
+    loss_plus = np.sum(loss)
 
-        # compute f(x - h) for that weight
-        W[i,j] -= epsilon*2
-        loss, _, _, _, _, _, _ = model.lossFun(inputs, targets, False)
-        loss_minus = np.sum(loss)
+    # compute f(x - h) for that weight
+    W[i,j] -= epsilon*2
+    loss, _, _, _, _, _, _ = model.lossFun(inputs, targets, False)
+    loss_minus = np.sum(loss)
 
-        # grad check must leave weights unchanged
-        # so reset the weight that we changed
-        W[i,j] += epsilon
+    # grad check must leave weights unchanged
+    # so reset the weight that we changed
+    W[i,j] += epsilon
 
-        # compute the numerical grad w.r.t. this param
-        grad = (loss_plus - loss_minus) / (2 * epsilon)
-        diffs[i,j] = grad - D[i,j]
+    # compute the numerical grad w.r.t. this param
+    grad = (loss_plus - loss_minus) / (2 * epsilon)
+    diffs[i,j] = grad - D[i,j]
 
   return diff_tensors
 
@@ -142,26 +141,18 @@ def visualize(inputs, outputs, reads, writes, adds, erases):
   np.set_printoptions(formatter={'float': '{: 0.1f}'.format}, linewidth=150)
   out = toArray(outputs, hi, wi)
   ins = np.array(inputs.T,dtype='float')
-  heads = len(reads)
-  r,w,a,e = {},{},{},{}
-  for idx in range(heads):
-    r[idx] = toArray(reads[idx]  , reads[0][0].shape[0] , wi)
-    w[idx] = toArray(writes[idx] , writes[0][0].shape[0] , wi)
-    a[idx] = toArray(adds[idx]   , adds[0][0].shape[0] , wi)
-    e[idx] = toArray(erases[idx] , erases[0][0].shape[0] , wi)
   print "inputs: "
   print ins
   print "outputs: "
   print out
-  for idx in range(heads):
-    print "reads-" + str(idx)
-    print r[idx]
-    print "writes-" + str(idx)
-    print w[idx]
-    print "adds-" + str(idx)
-    print a[idx]
-    print "erases-" + str(idx)
-    print e[idx]
+  print "reads"
+  print reads
+  print "writes"
+  print writes
+  print "adds"
+  print adds
+  print "erases"
+  print erases
 
 def unwrap(x):
   """
@@ -186,5 +177,111 @@ def unwrap(x):
           r[k] = v
       l.append(r)
     return l
-  else:
+  elif type(x) == np.numpy_extra.ArrayNode:
     return x.value
+  else:
+    return x
+
+def sigmoid_prime(z):
+    y = sigmoid(z)
+    return y * (1 - y)
+
+def tanh_prime(z):
+    y = np.tanh(z)
+    return 1 - y * y
+
+def compare_deltas(baseline=None, candidate=None, abs_tol=1e-5, rel_tol=0.01):
+  # TODO: maybe add relative tolerance check
+  epsilon = 1e-25
+  if baseline.shape != candidate.shape:
+    return False
+  diff_tensor = np.abs(baseline - candidate)
+  rel_tensor1 = diff_tensor / (np.abs(baseline) + 1e-25)
+  rel_tensor2 = diff_tensor / (np.abs(candidate) + 1e-25)
+  max_error = np.max(diff_tensor)
+  max_rel = max(np.max(rel_tensor1), np.max(rel_tensor2))
+  if max_error > abs_tol and max_rel > rel_tol:
+    return False
+  else:
+    return True
+
+def cosine_sim(a_t, b_t):
+    """
+    Computes the cosine similarity of vectors a and b.
+    Specifically \frac{u \cdot v}{||u|| \cdot ||v||}.
+    """
+    # numerator is the inner product
+    num = np.dot(a_t, b_t)
+
+    # denominator is the product of the norms
+    anorm = np.sqrt(np.sum(a_t*a_t))
+    bnorm = np.sqrt(np.sum(b_t*b_t))
+    den2 = (anorm * bnorm) + 1e-20
+
+    return num / den2
+
+def dKdu(u, v):
+  """
+  compute the grads of a given K w.r.t. u
+  you can just switch order of args to compute it for v
+  """
+  anorm = np.sqrt(np.sum(u*u))
+  bnorm = np.sqrt(np.sum(v*v))
+  den2 = (anorm * bnorm) + 1e-20 
+
+  a = v / den2
+  b = u / np.sum(np.square(u))
+  c = cosine_sim(u,v)
+  return a - b*c
+
+def softmax_grads(Ks, beta, i, j):
+  """
+  return the grad of the ith element of weighting w.r.t. j-th element of Ks
+  """
+  if j == i:
+    num = beta*np.exp(Ks[i]*beta) * (np.sum(np.exp(Ks*beta)) - np.exp(Ks[i]*beta))
+  else:
+    num = -beta*np.exp(Ks[i]*beta + Ks[j]*beta)
+  den1 = np.sum(np.exp(Ks*beta))
+  return num / (den1 * den1)
+
+def beta_grads(Ks, beta, i):
+  Karr = np.array(Ks)
+  anum = Ks[i] * np.exp(Ks[i] * beta)
+  aden = np.sum(np.exp(beta * Karr))
+  a = anum / aden
+
+  bnum = np.exp(Ks[i] * beta) * (np.sum(np.multiply(Karr, np.exp(Karr * beta))))
+  bden = aden * aden
+  b = bnum / bden
+  return a - b
+
+def K_focus(Ks, b_t):
+    """
+    The content-addressing method described in 3.3.1.
+    Specifically, this is equations (5) and (6).
+    k_t is the similarity key vector.
+    b_t is the similarity key strength.
+    memObject is a ref to our NTM memory object.
+    """
+    def F(K):
+        """
+        Given the key vector k_t, compute our sim
+        function between k_t and u and exponentiate.
+        """
+        return np.exp(b_t * K)
+
+    # Apply above function to every row in the matrix
+    # This is surely much slower than it needs to be
+    l = []
+    for K in Ks:
+        l.append(F(K))
+
+    # Return the normalized similarity weights
+    # This is essentially a softmax over the similarities
+        # with an extra degree of freedom parametrized by b_t
+    sims = np.array(l)
+
+    n = sims
+    d = np.sum(sims)
+    return n/d

@@ -32,8 +32,6 @@ parser.add_argument("--hi", help="upper bound on seq length",
                     default=3, type=int)
 parser.add_argument("--lo", help="lower bound on seq length",
                     default=1, type=int)
-parser.add_argument("--heads", help="number of (pairs of) read and write heads",
-                    default=1, type=int)
 parser.add_argument("--units", help="number of hidden units",
                     default=100, type=int)
 parser.add_argument("--lr_rate", help="maybe halve learning rate at this interval",
@@ -46,8 +44,10 @@ parser.add_argument("--serialize_to", help="where to save models",
                     default=None)
 parser.add_argument('--test_mode', dest='test_mode', action='store_true')
 parser.add_argument('--grad_check', dest='grad_check', action='store_true')
+parser.add_argument('--manual_grad', dest='manual_grad', action='store_true')
 parser.set_defaults(test_mode=False)
 parser.set_defaults(grad_check=False)
+parser.set_defaults(manual_grad=False)
 args = parser.parse_args()
 
 # create directory for serializations if necessary
@@ -72,8 +72,7 @@ if args.model is None:
   hidden_size = args.units # Size of hidden layer of neurons
   N = args.N # number of memory locations
   M = args.M # size of a memory location
-  heads = args.heads
-  model = NTM(seq.in_size, seq.out_size, hidden_size, N, M, vec_size, heads)
+  model = NTM(seq.in_size, seq.out_size, hidden_size, N, M, vec_size)
 else:
   # otherwise, load the model from specified file
   print "Using saved model:", args.model
@@ -87,14 +86,13 @@ optimizer = RMSProp(model.W)
 n = 0 # counts the number of sequences trained on
 bpc = None # keeps track of trailing bpc (cost)
 
-# train forever
-while True:
+while n < 10000:
 
   i, t, seq_len = seq.make()
   inputs = np.matrix(i)
   targets = np.matrix(t)
 
-  loss, deltas, outputs, r, w, a, e = model.lossFun(inputs, targets)
+  loss, deltas, outputs, r, w, a, e = model.lossFun(inputs, targets, args.manual_grad)
 
   newbpc = np.sum(loss) / ((seq_len*2 + 2) * vec_size)
   if bpc is not None:

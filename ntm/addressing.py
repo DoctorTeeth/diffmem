@@ -15,7 +15,7 @@ def cosine_sim(a_t, b_t):
     # denominator is the product of the norms
     anorm = np.sqrt(np.sum(a_t*a_t))
     bnorm = np.sqrt(np.sum(b_t*b_t))
-    den2 = (anorm * bnorm) + 1e-5
+    den2 = (anorm * bnorm) + 1e-20
 
     return num / den2
 
@@ -110,16 +110,19 @@ def location_focus(g_t, s_t, gamma_t, w_old, w_content):
     w_tp = shift(w_gt, s_t)
 
     # Take every element of the weight vector to the gamma_t-th power.
-    pows = w_tp ** gamma_t
+    # pows = w_tp ** gamma_t
 
     # Normalize that vector by its sum.
-    w_t = pows / np.sum(pows)
+    # w_t = pows / np.sum(pows)
 
-    return w_t
+    # return w_t
+    # w_gt is unchanged through all this - i checked (shouldn't have to though)
+    return w_tp, w_gt
 
 def create_weights(k_t, b_t, g_t, s_t, gamma_t, w_old, mem):
     """
     Convenience function to be called from NTM fprop.
     """
     w_content = content_focus(k_t, b_t, mem)
-    return location_focus(g_t, s_t, gamma_t, w_old, w_content)
+    w_tp, w_gt = location_focus(g_t, s_t, gamma_t, w_old, w_content)
+    return w_tp, w_gt, w_content
